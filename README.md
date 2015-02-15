@@ -4,5 +4,8 @@ Sound recorder program. Can record into separate files with configurable length 
 
 * To use the program:
     * Download all the files from the ** /release** directory onto your local hard drive
-    * To start the program execute the SoundRecorder.exe file
-* The project is under VisualStudio
+    * Start the SoundRecorder.exe file
+    
+    
+* For programmers:
+    * The project is under VisualStudio
