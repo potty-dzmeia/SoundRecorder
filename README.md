@@ -17,3 +17,5 @@ This program records sound from the microphone and writes the data into files. I
     
 * For programmers:
     * The project is under VisualStudio
+
+73 de LZ1ABC/Chav
