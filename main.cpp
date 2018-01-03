@@ -66,11 +66,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
      hwnd = CreateWindow (szAppName,                  // window class name
                           TEXT ("PottyRecorder b1.0                     Ham Radio software"), // window caption
-                          WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,// window style
+                          WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX,// window style
                           CW_USEDEFAULT,              // initial x position
                           CW_USEDEFAULT,              // initial y position
                           500,						  // initial x size
-                          300,						  // initial y size
+                          360,						  // initial y size
                           NULL,                       // parent window handle
                           hMenu,                       // window menu handle
                           hInstance,                  // program instance handle
@@ -373,10 +373,10 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  //---------------------Adding buttons------------------------------------------
 		  //Start
 		  hStart=CreateWindow("button", "Start", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						20,220,70,30,hwnd,(HMENU)1,hInstance ,NULL);
+						20,270,70,30,hwnd,(HMENU)1,hInstance ,NULL);
 		  //Stop
 		  hStop=CreateWindow("button", "Stop", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						150,220,70,30,hwnd,(HMENU)2, hInstance,NULL);
+						150,270,70,30,hwnd,(HMENU)2, hInstance,NULL);
 		  //File size
 		  hFileSize=CreateWindow("edit", "60", WS_CHILD | WS_VISIBLE | WS_BORDER  | ES_RIGHT,
 						20,6,70,20,hwnd,(HMENU)3, ((LPCREATESTRUCT) lParam)->hInstance,NULL);
