@@ -12,7 +12,8 @@ typedef struct{
 		 BOOL	bKill;			  // If the thread should continue running
 		 LPGUID deviceLPGUID;     // Pointer to the GUID structure identifying the capture device
 		 int	iSampleRate;
-		 int	iFileSize;
+		 int	iFileSizeInSeconds;
+		 int	iOverlapInSeconds; // If we should start recodring new file before the old file has been closed
 		 int	iStereo;
 		 int	iBitsPerSample;
 		 int    iFilesWritten;

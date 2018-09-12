@@ -111,7 +111,7 @@ BOOL MyRecorder :: CreateMyCaptureBuffer(){
 	dscbdesc.dwFXCount=0;
 	dscbdesc.lpDSCFXDesc=NULL;
 	
-	pbDataToWrite=new signed char[wfxC.nAvgBytesPerSec/2];//data for half a second
+	pbDataToWrite=new signed char[wfxC.nAvgBytesPerSec/2]; // We need space for data for half a second - but lets us
 
 	if(lpDSC==NULL){//if there is no DSCapture object
 		MessageBox(params.hwnd, TEXT("Create DSCapture object before creating Buffer"), TEXT("Error"), MB_OK | MB_ICONEXCLAMATION);
@@ -241,12 +241,13 @@ signed char* MyRecorder :: ReadFromSoundCard(DWORD dwBufferOffset){
 	}
 
 	CopyMemory(pbDataToWrite, lpvPtr1, dwBytes1);
-	if(lpvPtr2!=NULL){		//if there is overlapping and there is information in lpvPtr2- read it
+	if(lpvPtr2!=NULL)
+	{		//if there is overlapping and there is information in lpvPtr2- read it
 		CopyMemory(pbDataToWrite+dwBytes1, lpvPtr2,dwBytes2);
 	}
 	
-	if(DS_OK!=lpDSCB8->Unlock(lpvPtr1,dwBytes1,// Unlock the portion of the buffer we just used
-							lpvPtr2,dwBytes2)){						
+	if(DS_OK!=lpDSCB8->Unlock(lpvPtr1, dwBytes1, lpvPtr2, dwBytes2))// Unlock the portion of the buffer we just used							
+	{						
 			MessageBox(params.hwnd, TEXT("Error when trying to unlock the Capture buffer"), TEXT("Error"), MB_OK | MB_ICONEXCLAMATION);
 			return 0;
 	}

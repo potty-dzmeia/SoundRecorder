@@ -11,6 +11,15 @@
 
 #define WIN32_LEAN_AND_MEAN // no mfc
 
+#define POTTY_RECORDER                "PottyRecorder"
+#define POTTY_RECORDER_VERSION        1.3
+#define POTTY_RECORDER_VERSION_YEAR		"2018"
+
+#define MIN_LENGTH_IN_SECS            2
+#define DEFAULT_OVERLAPPING_IN_SECS		1
+#define DEFAULT_LENGTH_IN_SECS			  60 
+
+
  //-----------Procedures-------------------------
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK AboutDisplay1(HWND, UINT, WPARAM, LPARAM);
@@ -36,7 +45,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     PSTR szCmdLine, int iCmdShow)
 { 
 	 //---------------------------------
-	 static TCHAR szAppName[] = TEXT ("PottyRecorder b1.0") ;
      HWND         hwnd ;
      MSG          msg ;
      WNDCLASSEX   wndclass;
@@ -52,20 +60,21 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
      wndclass.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
      wndclass.hbrBackground = (HBRUSH)CreateSolidBrush (RGB(184,200,242)) ;
      wndclass.lpszMenuName  = NULL ;
-     wndclass.lpszClassName = szAppName ;
+     wndclass.lpszClassName = POTTY_RECORDER ;
 	 wndclass.hIconSm		= NULL;
 
      if (!RegisterClassEx (&wndclass))
      {
           MessageBox (NULL, TEXT ("This program requires Windows NT!"), 
-                      szAppName, MB_ICONERROR) ;
+                      szBuffer, MB_ICONERROR) ;
           return 0 ;
      }
 
 	 hMenu=LoadMenu(hInstance, MAKEINTRESOURCE (IDR_MENU1));
 
-     hwnd = CreateWindow (szAppName,                  // window class name
-                          TEXT ("PottyRecorder b1.0                     Ham Radio software"), // window caption
+	 sprintf_s(szBuffer, "%s v%.1f         Ham Radio software", POTTY_RECORDER, POTTY_RECORDER_VERSION);
+     hwnd = CreateWindow (POTTY_RECORDER,             // window class name
+                          szBuffer,					  // window caption
                           WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX,// window style
                           CW_USEDEFAULT,              // initial x position
                           CW_USEDEFAULT,              // initial y position
@@ -87,19 +96,22 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
      return (int)msg.wParam ;
 }
 
-void Thread(PVOID pParameter){
-	
+void Thread(PVOID pParameter)
+{
 	volatile pPARAMS	pParams;	// Must be volatile
-	int					i=1;		//keeps info for the length of the file, when i==60 make new file
-	SYSTEMTIME			tS;			//structure for the time;
-	int					iCaptureBufferSize;//the size of the CaptureBuffer
+	int					i=0;		// keeps info for the length of the file, when i == iFileSizeInSeconds make new file
+	SYSTEMTIME			tS;			// Structure for the time;
+	int					iCaptureBufferSize; // The size of the CaptureBuffer
 	int					iFileSizeInSeconds;
 	signed char			*pByteBuffer;		
  
+	SYSTEMTIME sysTime;
+	char str[256];
+
 	pParams=(pPARAMS)pParameter;
 
 	iCaptureBufferSize=(pParams->iSampleRate*pParams->iStereo*pParams->iBitsPerSample)/8; //calculates the buffer size for one second
-	iFileSizeInSeconds=pParams->iFileSize;//how big must be the file(I am using second variable, cause the user may change value durring recording)
+	iFileSizeInSeconds=pParams->iFileSizeInSeconds;//how big must be the file(I am using second variable, cause the user may change value durring recording)
 
 	
 	//Creates directory for sound files:
@@ -116,8 +128,8 @@ void Thread(PVOID pParameter){
 
 	//Reads the local time and creates file with the specific name.....
 	GetLocalTime(&tS);
-	StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
-	StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
+	StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute,tS.wSecond);
+	StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute,tS.wSecond);
 	
 	
 	//--Create MyRecroder object--
@@ -141,8 +153,8 @@ void Thread(PVOID pParameter){
 		}
 
 		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill){
-			i++;
+		while(!pParams->bKill)
+		{
 					//**-------EVENT1-------**/
 			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
 			ResetEvent(pMyRecorder->rghEvent[0]);
@@ -151,6 +163,11 @@ void Thread(PVOID pParameter){
 				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
 				break;	
 			}
+
+			GetSystemTime(&sysTime);
+			sprintf_s(str, "ev1: %02d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
+			OutputDebugString(str);
+			 
 					//**-------EVENT2------**/
 			WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
 			ResetEvent(pMyRecorder->rghEvent[1]);
@@ -159,11 +176,19 @@ void Thread(PVOID pParameter){
 				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
 				break;	
 			}
-		
+
+
+			GetSystemTime(&sysTime);
+			sprintf_s(str,"ev2: %.2d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
+			OutputDebugString(str);
+
+			i++;
+
 			//Create New FILE
-			if(i>iFileSizeInSeconds){
+			if(i >= iFileSizeInSeconds)
+			{
 				pParams->iFilesWritten++;
-				i=1;//reset i;
+				i=0;
 	
 				//Send message to the display dialog box to update how many files have been written
 				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
@@ -175,7 +200,7 @@ void Thread(PVOID pParameter){
 				}
 				
 				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferWavFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
+				StringCchPrintf(szBufferWavFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
 				if(!myMMFile->OpenMMFileWrite(szBufferWavFile)){
 					MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
 					break;
@@ -205,8 +230,8 @@ void Thread(PVOID pParameter){
 		 oggEncoder->initBitstream();
 	
 		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill){
-			i++;
+		while(!pParams->bKill)
+		{
 					//**--------EVENT1--------**/
 			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
 			ResetEvent(pMyRecorder->rghEvent[0]);
@@ -217,16 +242,18 @@ void Thread(PVOID pParameter){
 			ResetEvent(pMyRecorder->rghEvent[1]);
 			oggEncoder->encodeChunk(pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2));
 			
+			i++;
 			//if the file reaches the needed size, create another file
-			if(i>iFileSizeInSeconds){
+			if(i >= iFileSizeInSeconds)
+			{
 				pParams->iFilesWritten++;
-				i=1;//reset i;
+				i=0;
 			
 				//Send message to the display dialog box to update so current settings are displayed
 				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
 
 				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferOggFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
+				StringCchPrintf(szBufferOggFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
 			
 				//--Create OGGencoder object so that a new file is created--
 				delete(oggEncoder);
@@ -260,48 +287,56 @@ void Thread(PVOID pParameter){
 		
 		//--Create MMFile object--
 		MyMMFile *myMMFile=new MyMMFile(pParams,szBufferWavFile);
-		if(!myMMFile){
+		if(!myMMFile)
+		{
 			MessageBox(pParams->hwnd, "Error when trying to create file object", "Error", MB_OK | MB_ICONEXCLAMATION);
 			_endthread();	
 		}
 	 
 	
 		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill){
-			i++;
+		while(!pParams->bKill)
+		{
 					//**------EVENT1-----**/
 			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
 			ResetEvent(pMyRecorder->rghEvent[0]);
 			pByteBuffer=pMyRecorder->ReadFromSoundCard(0);
 			
 			//writes the data to .ogg and .wav files
-			oggEncoder->encodeChunk(pByteBuffer);
-			if(!myMMFile->AppendDataToFile(pByteBuffer)){
+			if(!myMMFile->AppendDataToFile(pByteBuffer))
+			{
 				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
 				break;	
-			}		
+			}	
+			oggEncoder->encodeChunk(pByteBuffer);
+				
 					//**------EVENT2------**/
 			WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
 			ResetEvent(pMyRecorder->rghEvent[1]);
 			pByteBuffer=pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2);
 			
-			oggEncoder->encodeChunk(pByteBuffer);
-			if(!myMMFile->AppendDataToFile(pByteBuffer)){
+			if(!myMMFile->AppendDataToFile(pByteBuffer))
+			{
 				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
 				break;	
-			}		
+			}	
+			oggEncoder->encodeChunk(pByteBuffer);
+				
+
+			i++;
 			//if the file reaches the needed size, create another file
-			if(i>iFileSizeInSeconds){
+			if(i >= iFileSizeInSeconds)
+			{
 				pParams->iFilesWritten++;
-				i=1;//reset i;
+				i=0;//reset i;
 			
 				//Send message to the display dialog box to update how many files have been written
 				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
 
 				/** New .wav file**/
 				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
-				StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute);
+				StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+				StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
 			
 				if(!myMMFile->CloseMMFile()){//close the old file
 					MessageBox(pParams->hwnd, "Error closing file", "Error", MB_OK | MB_ICONEXCLAMATION);
@@ -339,18 +374,34 @@ void Thread(PVOID pParameter){
 	_endthread();
 }
 
+enum WINDOW_IDENTIFIER 
+{ 
+  START_BUTTON = 1,
+  STOP_BUTTON,
+  FILE_LENGTH_EDIT_BUTTON,
+  FILE_OVERLAP_EDIT_BUTTON,
+  SAMPLE_RATE_COMBOBOX,
+  MONO_BUTTON,
+  STEREO_BUTTON,
+  BITS_PER_SAMPLE_COMBOBOX,
+  CAPTURE_DEVICE_BUTTON,
+  DEVICE_CAPS_BUTTON,
+  OGG_COMPRESSION_BUTTON,
+  NEED_WAV_BUTTON,
+  COMPRESSION_QUALITY_EDIT_BUTTON
+};
 
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	 static HINSTANCE	hInstance;
-	 HDC				hdc;
-     PAINTSTRUCT		ps;	
-	 static HWND		hStart, hStop, hSampleRate, hFileSize;
+	 static         HINSTANCE	hInstance;
+	 HDC				    hdc;
+   PAINTSTRUCT		ps;	
+	 static HWND		hStart, hStop, hSampleRate, hFileSize, hOverlapping;
 	 static HWND		hMono, hStereo, hBits, hRecordingControl,hDevCaps;
 	 static BOOL		bStereo;//Flag used for the Mono and Stereo buttons
-	 static HWND        hOgg,hOggQuality,hOggNeedWav;
-	 static HBRUSH		hBrushStatic;
+	 static HWND    hOgg,hOggQuality,hOggNeedWav;
+	 static HBRUSH  hBrushStatic;
 	 //OSVERSIONINFO		osVersionInfo;
 	 
 	 static bool		bOgg, bStillNeedWav;//used for the two checkboxes 
@@ -362,27 +413,37 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	 LPITEMIDLIST		lpItemId;
      
 	 //temps
-	 int				iTemp;
-	 BOOL				bTemp;
-	 TCHAR				szBuffer[MAX_PATH];
+	 int				    iTemp;
+	 BOOL				    bTemp;
+	 TCHAR				  szBuffer[MAX_PATH];
 	 
 	 switch (message)
-     {
+   {
      case WM_CREATE:
 		  hInstance=((LPCREATESTRUCT) lParam)->hInstance;
 		  //---------------------Adding buttons------------------------------------------
 		  //Start
 		  hStart=CreateWindow("button", "Start", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						20,270,70,30,hwnd,(HMENU)1,hInstance ,NULL);
+						20,270,70,30,hwnd,(HMENU)START_BUTTON,hInstance ,NULL);
 		  //Stop
 		  hStop=CreateWindow("button", "Stop", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						150,270,70,30,hwnd,(HMENU)2, hInstance,NULL);
+						150,270,70,30,hwnd,(HMENU)STOP_BUTTON, hInstance,NULL);
 		  //File size
-		  hFileSize=CreateWindow("edit", "60", WS_CHILD | WS_VISIBLE | WS_BORDER  | ES_RIGHT,
-						20,6,70,20,hwnd,(HMENU)3, ((LPCREATESTRUCT) lParam)->hInstance,NULL);
+		  sprintf(szBuffer, "%d", DEFAULT_LENGTH_IN_SECS);
+		  hFileSize=CreateWindow("edit", TEXT(szBuffer), WS_CHILD | WS_VISIBLE | WS_BORDER  | ES_RIGHT,
+						20,6,70,20,hwnd,(HMENU)FILE_LENGTH_EDIT_BUTTON, ((LPCREATESTRUCT) lParam)->hInstance,NULL);
+      //File Overlapping
+      sprintf(szBuffer, "%d", DEFAULT_OVERLAPPING_IN_SECS);
+		  hOverlapping = CreateWindow("edit", 
+                                  TEXT(szBuffer), 
+                                  WS_CHILD | WS_VISIBLE | WS_BORDER  | ES_RIGHT,
+						                      20,32,50,20,
+                                  hwnd,
+                                  (HMENU)FILE_OVERLAP_EDIT_BUTTON, 
+                                  ((LPCREATESTRUCT) lParam)->hInstance,NULL);
 		  //Sample rate
 		  hSampleRate=CreateWindow("combobox", "sample rate", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
-						20,32,88,300,hwnd,(HMENU)4, hInstance,NULL);
+						20,58,88,300,hwnd,(HMENU)SAMPLE_RATE_COMBOBOX, hInstance,NULL);
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("8000"));
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("11024"));
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("22050"));
@@ -393,38 +454,39 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  
 		  //Mono
 		  hMono=CreateWindow("button", "Mono", WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_BORDER,
-						20,63,70,22,hwnd,(HMENU)5, hInstance,NULL);
+        20,89,70,22,hwnd,(HMENU)MONO_BUTTON, hInstance,NULL);
 		  SendMessage(hMono, BM_SETCHECK, 1,0);//sets the Mono button checked
 		  bStereo=0;
 		  //Stereo
 		  hStereo=CreateWindow("button", "Stereo", WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_BORDER,
-						100,63,70,22,hwnd,(HMENU)6, hInstance,NULL);
+						100,89,70,22,hwnd,(HMENU)STEREO_BUTTON, hInstance,NULL);
 		  //Bits per sample
 		  hBits=CreateWindow("combobox", "bits per sample", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
-						20,93,50,60,hwnd,(HMENU)7, hInstance,NULL);
+						20,119,50,60,hwnd,(HMENU)BITS_PER_SAMPLE_COMBOBOX, hInstance,NULL);
 		  SendMessage(hBits,CB_ADDSTRING,0,(LPARAM)TEXT("8"));
 		  SendMessage(hBits,CB_ADDSTRING,0,(LPARAM)TEXT("16"));
 		  SendMessage(hBits, CB_SELECTSTRING, (WPARAM)-1, (LPARAM)TEXT("16"));
-		  //hBitmap=LoadBitmap(hInstance, (LPCTSTR) IDB_BITMAP1 );
+		  
+		 
 		 
 		  //Recording control
 		  hRecordingControl=CreateWindow("button", "Select capture device", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						275,5,170,22,hwnd,(HMENU)8, hInstance,NULL);
+						275,5,170,22,hwnd,(HMENU)CAPTURE_DEVICE_BUTTON, hInstance,NULL);
 		 
 		  //Device Capabilities Dialog
 		  hDevCaps=CreateWindow("button", "Device Capabilities", WS_CHILD | WS_VISIBLE | WS_BORDER,
-						275,30,170,22,hwnd,(HMENU)9, hInstance,NULL);
+						275,30,170,22,hwnd,(HMENU)DEVICE_CAPS_BUTTON, hInstance,NULL);
 
 		  //Do you want ogg compression? button
 		  hOgg=CreateWindow("button", "Ogg Vorbis compression", BS_CHECKBOX | WS_CHILD | WS_VISIBLE | WS_BORDER,
-						260,75,198,22,hwnd,(HMENU)10, hInstance,NULL);
+						260,75,198,22,hwnd,(HMENU)OGG_COMPRESSION_BUTTON, hInstance,NULL);
 		  //Still need the .wav files
 		  hOggNeedWav=CreateWindow("button", "", BS_CHECKBOX | WS_CHILD | WS_VISIBLE | WS_BORDER,
-						261,190,15,15,hwnd,(HMENU)11, hInstance,NULL);
+						261,190,15,15,hwnd,(HMENU)NEED_WAV_BUTTON, hInstance,NULL);
 
-		  //scroll bar for quality of the compression	
+		  //for quality of the compression	
 		  hOggQuality=CreateWindow("edit", "1", WS_CHILD | WS_VISIBLE | ES_RIGHT | WS_BORDER, 342, 110 , 30, 15, hwnd,
-			  (HMENU) 12, hInstance, NULL);
+			  (HMENU) COMPRESSION_QUALITY_EDIT_BUTTON, hInstance, NULL);
 		  
 
 		  /*---------------------Initializing  stuff-------------------------*/
@@ -438,7 +500,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  //Initializing the configuration PARAMS
           params.deviceLPGUID = NULL;
 		  params.iBitsPerSample=16;
-		  params.iFileSize=60;
+		  params.iFileSizeInSeconds=DEFAULT_LENGTH_IN_SECS;
 		  params.iSampleRate=11024;
 		  params.iStereo=1;
 		  bRecording=0;
@@ -480,9 +542,11 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  
 		  SetBkColor(hdc, RGB(184,200,242));
 		  TextOut(hdc,100, 7, "File size in seconds", (int)strlen("File size in seconds"));
-		  TextOut(hdc,115, 34, "Sample rate in Hz", (int)strlen("Sample rate in Hz"));
-		  TextOut(hdc, 75, 96, "Bits per sample", (int)strlen("Bits per sample"));
-		 
+      TextOut(hdc,80, 34, "File overlap in seconds", (int)strlen("File overlap in seconds"));
+		  TextOut(hdc,115, 60, "Sample rate in Hz", (int)strlen("Sample rate in Hz"));
+		  TextOut(hdc, 75, 122, "Bits per sample", (int)strlen("Bits per sample"));
+		  
+
 		  MoveToEx (hdc,255, 70, NULL) ;
 		  LineTo (hdc, 462, 70) ;
 		  LineTo (hdc, 462, 250) ;
@@ -499,14 +563,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	 case WM_COMMAND:
 		  switch (LOWORD (wParam))
 		  { 
-			case 1://START button
+      case START_BUTTON:
 
 				if(bRecording) //if its recording already break;
 					break;
 
-				if(GetDlgItemInt(hwnd,3,&bTemp,0)<60)//if the user has chosed a file smaller then 60seconds, warn and break;
+				if(GetDlgItemInt(hwnd,3,&bTemp,0) < MIN_LENGTH_IN_SECS)//if the user has chosed a file smaller then MIN seconds, warn and break;
 				{
-					MessageBox(hwnd, "Files can not be smaller then 60 seconds.", "Warning",  MB_OK | MB_ICONWARNING);
+					sprintf(szBuffer, "Files can not be smaller then %d seconds.", MIN_LENGTH_IN_SECS);
+					MessageBox(hwnd, TEXT(szBuffer), "Warning",  MB_OK | MB_ICONWARNING);
 					break;
 				}
 				
@@ -533,8 +598,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				EnableWindow(hOgg,0);
 				EnableWindow(hOggQuality,0);
 				EnableWindow(hOggNeedWav,0);
-                EnableWindow(hRecordingControl,0);
-                EnableWindow(hDevCaps,0);
+        EnableWindow(hRecordingControl,0);
+        EnableWindow(hDevCaps,0);
 				EnableWindow(hStop,1);
                 
 				
@@ -543,7 +608,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetFocus(hwnd);
 				break;
 
-			case 2://Stop button
+
+      case STOP_BUTTON:
 				if(!bRecording) break;//if not recording break;
 				params.bKill=1;//close the thread
 				SendMessage(hwndDisplay,WM_CLOSE,0,0);//close the display dialog
@@ -558,11 +624,12 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				EnableWindow(hMono,1);
 				EnableWindow(hStereo,1);
 				EnableWindow(hBits,1);
-                EnableWindow(hRecordingControl,1);
-                EnableWindow(hDevCaps,1);
+        EnableWindow(hRecordingControl,1);
+        EnableWindow(hDevCaps,1);
 				EnableWindow(hOgg,1);
 				EnableWindow(hStop,0);
-				if(bOgg){
+				if(bOgg)
+        {
 					EnableWindow(hOggQuality,1);
 					EnableWindow(hOggNeedWav,1);
 				}
@@ -572,7 +639,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 bRecording=0;//not recording flag
 				break;
 				
-			case 5://Mono
+
+      case MONO_BUTTON:
 				if(bStereo){
 					SendMessage(hStereo, BM_SETCHECK, 0, 0);
 					SendMessage(hMono, BM_SETCHECK, 1, 0);
@@ -582,7 +650,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);//send message to Display1 so it can update the filesize MB/min
 				break;
 
-			case 6://Stereo
+
+      case STEREO_BUTTON:
 				if(!bStereo){
 					SendMessage(hMono, BM_SETCHECK, 0,0);
 					SendMessage(hStereo, BM_SETCHECK, 1,0);	
@@ -592,23 +661,61 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);//send message to Display1 so it can update the filesize MB/min
 				break;
 
-			case 3://File size
-				if(HIWORD(wParam)==EN_UPDATE){
-					params.iFileSize=GetDlgItemInt(hwnd,3,&bTemp,0);
-					if(!bTemp){//if it can't translate the value into number
-						params.iFileSize=60;//set default length to 60 seconds
-						SetWindowText(hFileSize,"60");
+
+      case FILE_LENGTH_EDIT_BUTTON:
+				if(HIWORD(wParam)==EN_UPDATE)
+				{
+					params.iFileSizeInSeconds=GetDlgItemInt(hwnd, FILE_LENGTH_EDIT_BUTTON, &bTemp, 0);
+					if(!bTemp) //if it can't translate the value into number
+					{
+						params.iFileSizeInSeconds = DEFAULT_LENGTH_IN_SECS;
+						sprintf(szBuffer, "%d", DEFAULT_LENGTH_IN_SECS);
+						SetWindowText(hFileSize, TEXT(szBuffer));
+            
 					}
+          else if(params.iFileSizeInSeconds < MIN_LENGTH_IN_SECS)
+          {
+            sprintf(szBuffer, "%d", MIN_LENGTH_IN_SECS);
+						SetWindowText(hFileSize, TEXT(szBuffer));
+          }
+
+          // Send message to overlap button - in case the overlap value is not
+          SendMessage(hwnd, 
+                      WM_COMMAND, 
+                      MAKEWPARAM(FILE_OVERLAP_EDIT_BUTTON, EN_UPDATE), 
+                      NULL);
 				}
 				break;
 
-			case 4://Sample rate
+
+      case FILE_OVERLAP_EDIT_BUTTON:
+        if(HIWORD(wParam)==EN_UPDATE)
+				{
+					params.iOverlapInSeconds = GetDlgItemInt(hwnd, FILE_OVERLAP_EDIT_BUTTON, &bTemp, 0);
+					if(!bTemp) //if it can't translate the value into number
+					{
+						params.iOverlapInSeconds = DEFAULT_OVERLAPPING_IN_SECS;
+						sprintf(szBuffer, "%d", DEFAULT_OVERLAPPING_IN_SECS);
+						SetWindowText(hOverlapping, TEXT(szBuffer));
+            break;
+					}
+          if(params.iOverlapInSeconds > params.iFileSizeInSeconds/2)
+          {
+            params.iOverlapInSeconds = params.iFileSizeInSeconds/2;
+            sprintf(szBuffer, "%d", params.iOverlapInSeconds);
+						SetWindowText(hOverlapping, TEXT(szBuffer));
+          }
+				}
+				break;
+
+
+			case SAMPLE_RATE_COMBOBOX:
 				if(HIWORD (wParam) == LBN_SELCHANGE)
 					params.iSampleRate=GetDlgItemInt(hwnd,4,&bTemp,0);
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);//send message to Display1 so it can update the filesize MB/min
 				break;
 
-			case 7://Bits per sample
+      case BITS_PER_SAMPLE_COMBOBOX:
 				if(HIWORD (wParam) == LBN_SELCHANGE)
 					params.iBitsPerSample=GetDlgItemInt(hwnd,7,&bTemp,0);	
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);
@@ -626,15 +733,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				DialogBox(hInstance,(LPCSTR)IDD_DIALOGINDEX,hwnd,AboutIndex);
 				break;
 
-			case 8: //Select capture device (e.g sound card)from a dialog box
+      case CAPTURE_DEVICE_BUTTON: //Select capture device (e.g sound card)from a dialog box
 				DialogBox(hInstance,(LPCSTR)IDD_DIALOG_SELECT_DEVICE, hwnd, AboutCaptureDevice);
 				break;
 
-			case 9://Opens the dialog box with the device capabilities
+      case DEVICE_CAPS_BUTTON://Opens the dialog box with the device capabilities
 				DialogBox(hInstance,(LPCSTR)IDD_DIALOGDEVCAPS, hwnd, AboutDevCaps);
 				break;
 
-			case 10://Do you want Ogg Vorbis compression
+      case OGG_COMPRESSION_BUTTON:
 				if(bOgg==false){//compression ON
 					bOgg=true;
 					if(bStillNeedWav)
@@ -660,7 +767,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				break;
 
-			case 11://I still need the .wav files
+			case NEED_WAV_BUTTON:
 				if(bStillNeedWav==false){
 					bStillNeedWav=true;
 					params.iCompressionOnOFFBoth=3;
@@ -673,11 +780,13 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				break;
 
-			case 12://edit control, quality of compression
-				if(HIWORD(wParam)==EN_KILLFOCUS){
+      case COMPRESSION_QUALITY_EDIT_BUTTON:
+				if(HIWORD(wParam)==EN_KILLFOCUS)
+				{
 					iTemp=GetDlgItemInt(hwnd,12,&bTemp,true);
-					if(!bTemp){//if it can't translate the value into number
-						params.qualityOfOggCompression=0.1f;//set default length to 60 seconds
+					if(!bTemp)
+					{//if it can't translate the value into number
+						params.qualityOfOggCompression=0.1f;
 						SetWindowText(hOggQuality,"1");
 						return 0;
 					}
@@ -754,7 +863,10 @@ BOOL CALLBACK AboutAbout(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
 	   case WM_INITDIALOG:
 			//SetWindowText(GetDlgItem(hDlg,IDC_EDITABOUT),"Freeware recording software. \n http://www.qsl.net/lz1abc/software.htm");
 		    SetDlgItemText(hDlg, IDC_EDITABOUT, "Freeware recording software. http://www.qsl.net/lz1abc/software.htm");
-		   return TRUE;
+			sprintf_s(szBuffer, "LZ1ABC %s, version:%.1f", POTTY_RECORDER_VERSION_YEAR, POTTY_RECORDER_VERSION); 
+			SetDlgItemText(hDlg, IDC_STATIC1, szBuffer);
+			//LZ1ABC 2018 \n version 1.0 
+			return TRUE;
 	   case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{

@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Bulgarian resources
+// Bulgarian (Bulgaria) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_BGR)
-#ifdef _WIN32
 LANGUAGE LANG_BULGARIAN, SUBLANG_DEFAULT
 #pragma code_page(1251)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -61,7 +59,7 @@ IDI_ICON1               ICON                    "icon1.ico"
 // Menu
 //
 
-IDR_MENU1 MENU 
+IDR_MENU1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -81,7 +79,7 @@ END
 // Dialog
 //
 
-IDD_DIALOGDISPLAY DIALOGEX 13, 75, 130, 54
+IDD_DIALOGDISPLAY DIALOGEX 13, 91, 130, 54
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_BORDER
 EXSTYLE WS_EX_CLIENTEDGE
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -101,7 +99,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,69,66,50,14
     EDITTEXT        IDC_EDITABOUT,21,8,144,27,ES_CENTER | ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
-    CTEXT           "LZ1ABC August/2006 \n version b1.0 ",IDC_STATIC,54,42,82,18
+    CTEXT           "LZ1ABC 2018 \n version 1.0 ",IDC_STATIC1,54,42,82,18
 END
 
 IDD_DIALOGINDEX DIALOGEX 0, 0, 195, 251
@@ -119,7 +117,7 @@ BEGIN
     LTEXT           "The program needs DirectX in order to work. Usually it's build in Windows, if not get it from the Microsoft web site. ",IDC_STATIC,7,171,181,27
 END
 
-IDD_DIALOGDISPLAY1 DIALOGEX 13, 75, 131, 54
+IDD_DIALOGDISPLAY1 DIALOGEX 13, 91, 131, 54
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_BORDER
 EXSTYLE WS_EX_CLIENTEDGE
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -150,8 +148,12 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
+    IDD_DIALOGDISPLAY, DIALOG
+    BEGIN
+    END
+
     IDD_DIALOGABOUT, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -170,6 +172,10 @@ BEGIN
     BEGIN
         RIGHTMARGIN, 129
         BOTTOMMARGIN, 53
+    END
+
+    IDD_DIALOGDEVCAPS, DIALOG
+    BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -213,18 +219,16 @@ BEGIN
     END
 END
 
-#endif    // Bulgarian resources
+#endif    // Bulgarian (Bulgaria) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -247,7 +251,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_DIALOG_SELECT_DEVICE, DIALOG
     BEGIN
@@ -258,7 +262,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

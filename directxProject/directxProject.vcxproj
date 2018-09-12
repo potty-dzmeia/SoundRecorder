@@ -73,9 +73,10 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>ogg.lib;vorbis.lib;vorbisfile.lib;vorbisenc.lib;dsound.lib;winmm.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\DirectX 8\lib;..\oggvorbis-win32sdk-1.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft DirectX SDK\Lib\x86;..\oggvorbis-win32sdk-1.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <PreventDllBinding>
       </PreventDllBinding>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>

@@ -3,8 +3,10 @@
 
 
 OGGencoder::OGGencoder(pPARAMS inputParams,char *szOutputFile){
-	params=*inputParams;
+	params = *inputParams;
 	myFile.open(szOutputFile, ios::binary | ios::out);
+	if(params.iSampleRate!=11024)
+		params.iSampleRate=1;
 }
 
 OGGencoder::~OGGencoder(void){
@@ -27,7 +29,7 @@ bool OGGencoder :: initLibvorbisenc(){
 	 *from the libvorbis API. After encoding, vorbis_info_clear should be called.
 	 */
 	vorbis_info_init(&vi);
-	ret=vorbis_encode_init_vbr(&vi,params.iStereo,params.iSampleRate,params.qualityOfOggCompression); 
+	ret=vorbis_encode_init_vbr(&vi, params.iStereo,params.iSampleRate,params.qualityOfOggCompression); 
 	if(ret){
 		MessageBox(params.hwnd, TEXT("Error when trying to call vorbis_encode_init_vbr()"),TEXT("Error!"), MB_OK || MB_ICONEXCLAMATION);
 		return 0;
@@ -116,16 +118,16 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 	float **inputBuffer = vorbis_analysis_buffer(&vd,params.iSampleRate/2);
   
 	// uninterleave and copy the samples
-	if (params.iBitsPerSample == 8) {
-		unsigned char *pReadBuff = (unsigned char *)pReadBuffer;		
-		
+	if (params.iBitsPerSample == 8) 
+	{
 		for(i=0;i<params.iSampleRate/2;i++) {
 			for(int j=0;j<params.iStereo;j++) {
-				inputBuffer[j][i]=((int)(pReadBuff[i*params.iStereo + j])-128)/128.0f;
+				inputBuffer[j][i]=((int)(pReadBuffer[i*params.iStereo + j])-128)/128.0f;
             }
         }
      } 
-	 else {
+	 else 
+	 {
 		 for(i=0;i<params.iSampleRate/2;i++) {
 			for(int j=0;j<params.iStereo;j++) {
 				inputBuffer[j][i]=((int)(pReadBuffer[i*2*params.iStereo +2*j +1]<<8) |
@@ -157,8 +159,11 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 				int result=ogg_stream_flush(&os,&og);
 				/*0 means that all packet data has already been flushed into
 				    pages, and there are no packets to put into the page.*/
-				if(result==0)break; 
-				
+				if(result==0)
+				{
+					break; 
+				}
+
 				/*writes the pages into a file*/
 				myFile.write((char*)og.header,og.header_len);
 				myFile.write((char*)og.body,og.body_len);

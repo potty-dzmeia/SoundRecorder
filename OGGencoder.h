@@ -9,7 +9,7 @@ using namespace std;
 class OGGencoder{
 private:
 	
-	PARAMS			params;			 //Audio parameters
+	PARAMS 	        params;			 //Audio parameters
 	ofstream		myFile;          //File where the data will be written
 
 	ogg_stream_state os;   /* take physical pages, weld into a logical

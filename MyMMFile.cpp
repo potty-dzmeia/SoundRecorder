@@ -50,7 +50,7 @@ BOOL MyMMFile :: WriteHeader(){
 	HRESULT			hr;
 	
 	chunkInf.fccType=mmioStringToFOURCC("WAVE",0);		//creating the Main Chunk
-	chunkInf.cksize=36+wfxC.nAvgBytesPerSec*params.iFileSize;
+	chunkInf.cksize=36+wfxC.nAvgBytesPerSec*params.iFileSizeInSeconds;
 	if(MMSYSERR_NOERROR!=mmioCreateChunk(hMMFileW, &chunkInf, MMIO_CREATERIFF)){
 		MessageBox(params.hwnd, TEXT("Error creating RIFF chunk"), TEXT("Error"), MB_OK);
 		CloseMMFile();
@@ -85,7 +85,7 @@ BOOL MyMMFile :: WriteHeader(){
 	}
 	
 	chunkInf.ckid=mmioStringToFOURCC("data",0);			//Creating the second subchunk-"data"
-	chunkInf.cksize=wfxC.nAvgBytesPerSec*params.iFileSize;
+	chunkInf.cksize=wfxC.nAvgBytesPerSec*params.iFileSizeInSeconds;
 												
 	hr=mmioCreateChunk(hMMFileW, &chunkInf,0);
 	if(hr==MMIOERR_CANNOTSEEK){
