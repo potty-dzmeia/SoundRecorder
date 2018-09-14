@@ -1,9 +1,13 @@
 #include <windows.h>
 #pragma once 
 
-#define WAV_ONLY	(1)
-#define OGG_ONLY	(2)
-#define WAV_AND_OGG (3)
+
+enum output_files
+{
+  WAV_ONLY,
+  OGG_ONLY,
+  WAV_AND_OGG
+};
 
 //----------------------------------------------------------------
 				/**Parameters with sound specifications**/
@@ -18,7 +22,7 @@ typedef struct{
 		 int	iBitsPerSample;
 		 int    iFilesWritten;
 		 float  qualityOfOggCompression;
-		 int    iCompressionOnOFFBoth;
+		 output_files    iCompressionOnOFFBoth;
 		 /*-if iCompressionOnOFFBoth is 1-> write only to .wav files(off)
 		   -if iCompressionOnOFFBoth is 2-> write only to .ogg files(on)
 		   -if iCompressionOnOFFBoth is 3-> write both	                 */

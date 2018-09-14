@@ -15,7 +15,7 @@
 #define POTTY_RECORDER_VERSION        1.3
 #define POTTY_RECORDER_VERSION_YEAR		"2018"
 
-#define MIN_LENGTH_IN_SECS            2
+#define MIN_LENGTH_IN_SECS            1
 #define DEFAULT_OVERLAPPING_IN_SECS		1
 #define DEFAULT_LENGTH_IN_SECS			  60 
 
@@ -39,7 +39,7 @@ PARAMS		params;//params for the thread
 HWND		hwndDisplay, hwndDisplay1;//The display windows
 
 TCHAR				szBuffer[MAX_PATH];// char buffer used for different things
-TCHAR				szBufferWavFile[MAX_PATH],szBufferOggFile[MAX_PATH];;// 
+ 
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     PSTR szCmdLine, int iCmdShow)
@@ -98,32 +98,25 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 void Thread(PVOID pParameter)
 {
-	volatile pPARAMS	pParams;	// Must be volatile
-	int					i=0;		// keeps info for the length of the file, when i == iFileSizeInSeconds make new file
-	SYSTEMTIME			tS;			// Structure for the time;
-	int					iCaptureBufferSize; // The size of the CaptureBuffer
-	int					iFileSizeInSeconds;
-	signed char			*pByteBuffer;		
- 
-	SYSTEMTIME sysTime;
-	char str[256];
-
-	pParams=(pPARAMS)pParameter;
-
-	iCaptureBufferSize=(pParams->iSampleRate*pParams->iStereo*pParams->iBitsPerSample)/8; //calculates the buffer size for one second
-	iFileSizeInSeconds=pParams->iFileSizeInSeconds;//how big must be the file(I am using second variable, cause the user may change value durring recording)
+	volatile      pPARAMS	pParams = (pPARAMS)pParameter;	    
+	int					  seconds_counter = 0;  // Keeps info for the current length of the file
+	SYSTEMTIME		tS;                   // Structure for the time;
+  TCHAR				  szBufferWavFile[MAX_PATH], szBufferOggFile[MAX_PATH];
+	SYSTEMTIME    sysTime;
+  signed char	  *pCaptureBuffer;	
+  int					  iCaptureBufferSize = (pParams->iSampleRate*pParams->iStereo*pParams->iBitsPerSample) / 8; //Buffer size for one second of sound data
 
 	
+
+
 	//Creates directory for sound files:
-	if(!CreateDirectory(params.szDirectoryName,NULL)){
-		
-		if(GetLastError()==ERROR_ALREADY_EXISTS){
-			//continiue;
-		}
-		else {
-			MessageBox(params.hwnd, "Couldn't create directory for audio files", "error", MB_OK);
-			_endthread();
-		}
+	if(!CreateDirectory(params.szDirectoryName,NULL))
+  {
+		if(GetLastError()!=ERROR_ALREADY_EXISTS) 
+    { 
+      MessageBox(params.hwnd, "Couldn't create directory for audio files", "error", MB_OK);
+      _endthread();
+    }
 	}
 
 	//Reads the local time and creates file with the specific name.....
@@ -132,242 +125,331 @@ void Thread(PVOID pParameter)
 	StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute,tS.wSecond);
 	
 	
-	//--Create MyRecroder object--
-	MyRecorder *pMyRecorder=new MyRecorder(pParams);
-	if(!pMyRecorder){
-			MessageBox(pParams->hwnd, "Couldn't create MySound object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION);
-			_endthread();
-	}
+	MyRecorder *pMyRecorder = new MyRecorder(pParams);
+	if(!pMyRecorder) {MessageBox(NULL, "Error8", "Error",MB_OK); _endthread();}
 
-	/*-----------------------------------------------------------------|
-	|			Here is the case when no compression is needed.        |	 
-	|			The output is only .wav files.						   |
-	|-------------------------------------------------------------------*/
-	if(params.iCompressionOnOFFBoth == WAV_ONLY){
-	
-		//--Create MMFile object--
-		MyMMFile *myMMFile=new MyMMFile(pParams,szBufferWavFile);
-		if(!myMMFile){
-			MessageBox(pParams->hwnd, "Error when trying to create file object", "Error", MB_OK | MB_ICONEXCLAMATION);
-			_endthread();	
-		}
+  OGGencoder *oggEncoder = NULL;
+  MyMMFile   *myMMFile = NULL;
 
-		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill)
-		{
-					//**-------EVENT1-------**/
-			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
-			ResetEvent(pMyRecorder->rghEvent[0]);
-		
-			if(!myMMFile->AppendDataToFile(pMyRecorder->ReadFromSoundCard(0))){
-				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
-				break;	
-			}
+  
+  if(params.iCompressionOnOFFBoth == WAV_ONLY || params.iCompressionOnOFFBoth == WAV_AND_OGG)
+  {
+    myMMFile = new MyMMFile(pParams,szBufferWavFile);
+    if(!myMMFile) {MessageBox(NULL, "Error1", "Error", MB_OK); _endthread();}
+  }
 
-			GetSystemTime(&sysTime);
-			sprintf_s(str, "ev1: %02d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
-			OutputDebugString(str);
-			 
-					//**-------EVENT2------**/
-			WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
-			ResetEvent(pMyRecorder->rghEvent[1]);
-		
-			if(!myMMFile->AppendDataToFile(pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2))){
-				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
-				break;	
-			}
+  if(params.iCompressionOnOFFBoth == OGG_ONLY || params.iCompressionOnOFFBoth == WAV_AND_OGG)
+  {
+    oggEncoder = new OGGencoder(&params,szBufferOggFile);
+    if(!oggEncoder)  {MessageBox(NULL, "Error9", "Error",MB_OK); _endthread();}
+    oggEncoder->initLibvorbisenc();
+    oggEncoder->initBitstream();
+  }
 
 
-			GetSystemTime(&sysTime);
-			sprintf_s(str,"ev2: %.2d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
-			OutputDebugString(str);
 
-			i++;
+  //Starting to read from the DirectSound Buffer
+  while(!pParams->bKill)
+  {
+    //**------W8 for 500ms of data -----**/
+    WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE); 
+    ResetEvent(pMyRecorder->rghEvent[0]);
+    pCaptureBuffer = pMyRecorder->ReadFromSoundCard(0);
 
-			//Create New FILE
-			if(i >= iFileSizeInSeconds)
-			{
-				pParams->iFilesWritten++;
-				i=0;
-	
-				//Send message to the display dialog box to update how many files have been written
-				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
-				
-				/** new MyMMFile object**/
-				if(!myMMFile->CloseMMFile()){//close the old file
-					MessageBox(pParams->hwnd, "Error closing file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-				
-				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferWavFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
-				if(!myMMFile->OpenMMFileWrite(szBufferWavFile)){
-					MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-				if(!myMMFile->WriteHeader()){//writes the header of teh .wav file
-					MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-			}
+    //writes the data to .ogg and .wav files
+    if(myMMFile)
+    {
+      if(!myMMFile->AppendDataToFile(pCaptureBuffer)) { MessageBox(NULL, "Error2", "Error", MB_OK);  break;}	
+    }
+   
+    if(oggEncoder)
+    {
+      oggEncoder->encodeChunk(pCaptureBuffer);
+    }
+    
+    //**------W8 for 500ms of data -----**/
+    WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE); //w8 for the second event
+    ResetEvent(pMyRecorder->rghEvent[1]);
+    pCaptureBuffer= pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2);
+
+    if(myMMFile)
+    { //writes the data to .wav files
+      if(!myMMFile->AppendDataToFile(pCaptureBuffer)) { MessageBox(NULL, "Error3", "Error", MB_OK);  break; }	
+    }
+   
+    if(oggEncoder)
+    { //writes the data to .ogg files
+      oggEncoder->encodeChunk(pCaptureBuffer);
+    }
+
+
+    seconds_counter++;
+    //if the file reaches the needed size, create another file
+    if(seconds_counter >= pParams->iFileSizeInSeconds)
+    {
+      pParams->iFilesWritten++;
+      seconds_counter = 0;
+
+      //Send message to the display dialog box to update how many files have been written
+      SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
+
+      /** New .wav file**/
+      GetLocalTime(&tS);				//open new file with the new name		
+      StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+      StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+
+      if(myMMFile)
+      {
+        if(!myMMFile->CloseMMFile())                    { MessageBox(NULL, "Error4", "Error", MB_OK | MB_ICONEXCLAMATION); break;}
+        if(!myMMFile->OpenMMFileWrite(szBufferWavFile)) { MessageBox(NULL, "Error5", "Error", MB_OK | MB_ICONEXCLAMATION); break;}
+        if(!myMMFile->WriteHeader())                    { MessageBox(NULL, "Error6", "Error", MB_OK | MB_ICONEXCLAMATION); break;}
+      }
+      
+      if(oggEncoder)
+      {
+        //--Create OGGencoder object so that a new file is created--
+        delete(oggEncoder);
+        OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
+        if(!oggEncoder)   {MessageBox(NULL, "Error7", "Error", MB_OK); _endthread();}
+        oggEncoder->initLibvorbisenc();
+        oggEncoder->initBitstream();
+      }
 		}//while
-		myMMFile->CloseMMFile();
-	}/*end of WAV_ONLY procedure*/
 
-	/*-----------------------------------------------------------------|
-	|			Here is the case when compression is needed(ON).	   |	 
-	|			The output is only .ogg vorbis files.				   |
-	|-------------------------------------------------------------------*/
-	else if(params.iCompressionOnOFFBoth == OGG_ONLY){
-		//--Create OGGencoder object--
-		OGGencoder *oggEncoder=new OGGencoder(pParams, szBufferOggFile);
-		if(!oggEncoder){
-			 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
-			 _endthread();
-		 }
-	 
-		 oggEncoder->initLibvorbisenc();
-		 oggEncoder->initBitstream();
-	
-		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill)
-		{
-					//**--------EVENT1--------**/
-			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
-			ResetEvent(pMyRecorder->rghEvent[0]);
-			oggEncoder->encodeChunk(pMyRecorder->ReadFromSoundCard(0));
-					
-					//**-------EVENT2---------**/
-			WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
-			ResetEvent(pMyRecorder->rghEvent[1]);
-			oggEncoder->encodeChunk(pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2));
-			
-			i++;
-			//if the file reaches the needed size, create another file
-			if(i >= iFileSizeInSeconds)
-			{
-				pParams->iFilesWritten++;
-				i=0;
-			
-				//Send message to the display dialog box to update so current settings are displayed
-				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
 
-				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferOggFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
-			
-				//--Create OGGencoder object so that a new file is created--
-				delete(oggEncoder);
-				OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
-				if(!oggEncoder){
-					 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
-					 _endthread();
-				 }
-				oggEncoder->initLibvorbisenc();
-				oggEncoder->initBitstream();
-			}
-		}//while
-		if(oggEncoder)
-			delete(oggEncoder);
+	  ///*-----------------------------------------------------------------|
+	  //|			Here is the case when no compression is needed.        |	 
+	  //|			The output is only .wav files.						   |
+	  //|-------------------------------------------------------------------*/
+	  //if(params.iCompressionOnOFFBoth == WAV_ONLY){
+	  //
+	  //	//--Create MMFile object--
+	  //	MyMMFile *myMMFile=new MyMMFile(pParams,szBufferWavFile);
+	  //	if(!myMMFile){
+	  //		MessageBox(pParams->hwnd, "Error when trying to create file object", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //		_endthread();	
+	  //	}
+
+	  //	//Starting to read from the DirectSound Buffer
+	  //	while(!pParams->bKill)
+	  //	{
+	  //				//**-------EVENT1-------**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
+	  //		ResetEvent(pMyRecorder->rghEvent[0]);
+	  //	
+	  //		if(!myMMFile->AppendDataToFile(pMyRecorder->ReadFromSoundCard(0))){
+	  //			MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //			break;	
+	  //		}
+
+	  //		GetSystemTime(&sysTime);
+	  //		sprintf_s(str, "ev1: %02d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
+	  //		OutputDebugString(str);
+	  //		 
+	  //				//**-------EVENT2------**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
+	  //		ResetEvent(pMyRecorder->rghEvent[1]);
+	  //	
+	  //		if(!myMMFile->AppendDataToFile(pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2))){
+	  //			MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //			break;	
+	  //		}
+
+
+	  //		GetSystemTime(&sysTime);
+	  //		sprintf_s(str,"ev2: %.2d:%.3d\n", sysTime.wSecond, sysTime.wMilliseconds);
+	  //		OutputDebugString(str);
+
+	  //		i++;
+
+	  //		//Create New FILE
+	  //		if(i >= iFileSizeInSeconds)
+	  //		{
+	  //			pParams->iFilesWritten++;
+	  //			i=0;
+	  //
+	  //			//Send message to the display dialog box to update how many files have been written
+	  //			SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
+	  //			
+	  //			/** new MyMMFile object**/
+	  //			if(!myMMFile->CloseMMFile()){//close the old file
+	  //				MessageBox(pParams->hwnd, "Error closing file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+	  //			
+	  //			GetLocalTime(&tS);				//open new file with the new name		
+	  //			StringCchPrintf(szBufferWavFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+	  //			if(!myMMFile->OpenMMFileWrite(szBufferWavFile)){
+	  //				MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+	  //			if(!myMMFile->WriteHeader()){//writes the header of teh .wav file
+	  //				MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+	  //		}
+	  //	}//while
+	  //	myMMFile->CloseMMFile();
+	  //}/*end of WAV_ONLY procedure*/
+
+	  ///*-----------------------------------------------------------------|
+	  //|			Here is the case when compression is needed(ON).	   |	 
+	  //|			The output is only .ogg vorbis files.				   |
+	  //|-------------------------------------------------------------------*/
+	  //else if(params.iCompressionOnOFFBoth == OGG_ONLY){
+	  //	//--Create OGGencoder object--
+	  //	OGGencoder *oggEncoder=new OGGencoder(pParams, szBufferOggFile);
+	  //	if(!oggEncoder){
+	  //		 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
+	  //		 _endthread();
+	  //	 }
+	  // 
+	  //	 oggEncoder->initLibvorbisenc();
+	  //	 oggEncoder->initBitstream();
+	  //
+	  //	//Starting to read from the DirectSound Buffer
+	  //	while(!pParams->bKill)
+	  //	{
+	  //				//**--------EVENT1--------**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
+	  //		ResetEvent(pMyRecorder->rghEvent[0]);
+	  //		oggEncoder->encodeChunk(pMyRecorder->ReadFromSoundCard(0));
+	  //				
+	  //				//**-------EVENT2---------**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
+	  //		ResetEvent(pMyRecorder->rghEvent[1]);
+	  //		oggEncoder->encodeChunk(pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2));
+	  //		
+	  //		i++;
+	  //		//if the file reaches the needed size, create another file
+	  //		if(i >= iFileSizeInSeconds)
+	  //		{
+	  //			pParams->iFilesWritten++;
+	  //			i=0;
+	  //		
+	  //			//Send message to the display dialog box to update so current settings are displayed
+	  //			SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
+
+	  //			GetLocalTime(&tS);				//open new file with the new name		
+	  //			StringCchPrintf(szBufferOggFile,MAX_PATH,TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+	  //		
+	  //			//--Create OGGencoder object so that a new file is created--
+	  //			delete(oggEncoder);
+	  //			OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
+	  //			if(!oggEncoder){
+	  //				 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
+	  //				 _endthread();
+	  //			 }
+	  //			oggEncoder->initLibvorbisenc();
+	  //			oggEncoder->initBitstream();
+	  //		}
+	  //	}//while
+	  //	if(oggEncoder)
+	  //		delete(oggEncoder);
+	  //}/*end of procedure when only compressed files are needed*/
+	  //
+	  ///*------------------------------------------------------------------|
+	  //|			Here is the case when compressed and not compressed	    |
+	  //|			files are needed(Both)									|	 
+	  //|			The output is  .ogg vorbis files and .wav files.	    |
+	  //|-------------------------------------------------------------------*/
+	  //else{
+	  //	//--Create OGGencoder object--
+	  //	OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
+	  //	if(!oggEncoder){
+	  //		 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
+	  //		 _endthread();
+	  //	 }
+	  //	oggEncoder->initLibvorbisenc();
+	  //	oggEncoder->initBitstream();
+	  //	
+	  //	//--Create MMFile object--
+	  //	MyMMFile *myMMFile=new MyMMFile(pParams,szBufferWavFile);
+	  //	if(!myMMFile)
+	  //	{
+	  //		MessageBox(pParams->hwnd, "Error when trying to create file object", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //		_endthread();	
+	  //	}
+	  // 
+	  //
+	  //	//Starting to read from the DirectSound Buffer
+	  //	while(!pParams->bKill)
+	  //	{
+	  //				//**------EVENT1-----**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
+	  //		ResetEvent(pMyRecorder->rghEvent[0]);
+	  //		pByteBuffer=pMyRecorder->ReadFromSoundCard(0);
+	  //		
+	  //		//writes the data to .ogg and .wav files
+	  //		if(!myMMFile->AppendDataToFile(pByteBuffer))
+	  //		{
+	  //			MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //			break;	
+	  //		}	
+	  //		oggEncoder->encodeChunk(pByteBuffer);
+	  //			
+	  //				//**------EVENT2------**/
+	  //		WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
+	  //		ResetEvent(pMyRecorder->rghEvent[1]);
+	  //		pByteBuffer=pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2);
+	  //		
+	  //		if(!myMMFile->AppendDataToFile(pByteBuffer))
+	  //		{
+	  //			MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //			break;	
+	  //		}	
+	  //		oggEncoder->encodeChunk(pByteBuffer);
+	  //			
+
+	  //		i++;
+	  //		//if the file reaches the needed size, create another file
+	  //		if(i >= iFileSizeInSeconds)
+	  //		{
+	  //			pParams->iFilesWritten++;
+	  //			i=0;//reset i;
+	  //		
+	  //			//Send message to the display dialog box to update how many files have been written
+	  //			SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
+
+	  //			/** New .wav file**/
+	  //			GetLocalTime(&tS);				//open new file with the new name		
+	  //			StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+	  //			StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
+	  //		
+	  //			if(!myMMFile->CloseMMFile()){//close the old file
+	  //				MessageBox(pParams->hwnd, "Error closing file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+	  //			if(!myMMFile->OpenMMFileWrite(szBufferWavFile)){
+	  //				MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+	  //			if(!myMMFile->WriteHeader()){//writes the header of teh .wav file
+	  //				MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
+	  //				break;
+	  //			}
+
+
+	  //			//--Create OGGencoder object so that a new file is created--
+	  //			delete(oggEncoder);
+	  //			OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
+	  //			if(!oggEncoder){
+	  //				 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
+	  //				 _endthread();
+	  //			 }
+	  //			oggEncoder->initLibvorbisenc();
+	  //			oggEncoder->initBitstream();
+	  //		}
+	  //	}//while
+	  //	myMMFile->CloseMMFile();
+	  //	if(oggEncoder)
+	  //		delete(oggEncoder);
 	}/*end of procedure when only compressed files are needed*/
 	
-	/*------------------------------------------------------------------|
-	|			Here is the case when compressed and not compressed	    |
-	|			files are needed(Both)									|	 
-	|			The output is  .ogg vorbis files and .wav files.	    |
-	|-------------------------------------------------------------------*/
-	else{
-		//--Create OGGencoder object--
-		OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
-		if(!oggEncoder){
-			 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
-			 _endthread();
-		 }
-		oggEncoder->initLibvorbisenc();
-		oggEncoder->initBitstream();
-		
-		//--Create MMFile object--
-		MyMMFile *myMMFile=new MyMMFile(pParams,szBufferWavFile);
-		if(!myMMFile)
-		{
-			MessageBox(pParams->hwnd, "Error when trying to create file object", "Error", MB_OK | MB_ICONEXCLAMATION);
-			_endthread();	
-		}
-	 
-	
-		//Starting to read from the DirectSound Buffer
-		while(!pParams->bKill)
-		{
-					//**------EVENT1-----**/
-			WaitForSingleObject(pMyRecorder->rghEvent[0], INFINITE);//w8 for the first event
-			ResetEvent(pMyRecorder->rghEvent[0]);
-			pByteBuffer=pMyRecorder->ReadFromSoundCard(0);
-			
-			//writes the data to .ogg and .wav files
-			if(!myMMFile->AppendDataToFile(pByteBuffer))
-			{
-				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
-				break;	
-			}	
-			oggEncoder->encodeChunk(pByteBuffer);
-				
-					//**------EVENT2------**/
-			WaitForSingleObject(pMyRecorder->rghEvent[1], INFINITE);//w8 for the second event
-			ResetEvent(pMyRecorder->rghEvent[1]);
-			pByteBuffer=pMyRecorder->ReadFromSoundCard(iCaptureBufferSize/2);
-			
-			if(!myMMFile->AppendDataToFile(pByteBuffer))
-			{
-				MessageBox(pParams->hwnd, "Error with the ReadFromSoundCard function + Append to file", "Error", MB_OK | MB_ICONEXCLAMATION);
-				break;	
-			}	
-			oggEncoder->encodeChunk(pByteBuffer);
-				
-
-			i++;
-			//if the file reaches the needed size, create another file
-			if(i >= iFileSizeInSeconds)
-			{
-				pParams->iFilesWritten++;
-				i=0;//reset i;
-			
-				//Send message to the display dialog box to update how many files have been written
-				SendMessage(hwndDisplay,WM_INITDIALOG,0,0);
-
-				/** New .wav file**/
-				GetLocalTime(&tS);				//open new file with the new name		
-				StringCchPrintf(szBufferWavFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.wav"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
-				StringCchPrintf(szBufferOggFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u.ogg"), pParams->szDirectoryName,tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute, tS.wSecond);
-			
-				if(!myMMFile->CloseMMFile()){//close the old file
-					MessageBox(pParams->hwnd, "Error closing file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-				if(!myMMFile->OpenMMFileWrite(szBufferWavFile)){
-					MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-				if(!myMMFile->WriteHeader()){//writes the header of teh .wav file
-					MessageBox(pParams->hwnd, "Error opening file", "Error", MB_OK | MB_ICONEXCLAMATION);
-					break;
-				}
-
-
-				//--Create OGGencoder object so that a new file is created--
-				delete(oggEncoder);
-				OGGencoder *oggEncoder=new OGGencoder(&params,szBufferOggFile);
-				if(!oggEncoder){
-					 MessageBox(pParams->hwnd, "Couldn't create OGGencoder object, possibly out of memory", "Error",MB_OK | MB_ICONEXCLAMATION); 
-					 _endthread();
-				 }
-				oggEncoder->initLibvorbisenc();
-				oggEncoder->initBitstream();
-			}
-		}//while
-		myMMFile->CloseMMFile();
-		if(oggEncoder)
-			delete(oggEncoder);
-	}/*end of procedure when only compressed files are needed*/
-	
+  if(myMMFile)
+    myMMFile->CloseMMFile();
+  if(oggEncoder)
+    delete(oggEncoder);
 		
 	pMyRecorder->ShutDown();
 	//MessageBox(pParams->hwnd, "thread: You stopped the recorder!", "Note", MB_OK);
@@ -502,12 +584,12 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  params.iBitsPerSample=16;
 		  params.iFileSizeInSeconds=DEFAULT_LENGTH_IN_SECS;
 		  params.iSampleRate=11024;
-		  params.iStereo=1;
+		  params.iStereo = 1;
 		  bRecording=0;
 		  params.hwnd=hwnd;
 		  params.bKill=0;
-		  params.qualityOfOggCompression=0.1f;  
-		  params.iCompressionOnOFFBoth=1;
+		  params.qualityOfOggCompression = 0.1f;  
+      params.iCompressionOnOFFBoth = WAV_ONLY;
 		  
 		  if(!GetCurrentDirectory(256,szBuffer)){
 			//if its not possible to determine the current dir, choosing output dir is mandatory//
@@ -742,24 +824,27 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 
       case OGG_COMPRESSION_BUTTON:
-				if(bOgg==false){//compression ON
-					bOgg=true;
+				if(bOgg == false) //compression ON
+        {
+					bOgg = true;
 					if(bStillNeedWav)
-						params.iCompressionOnOFFBoth=3; 
-					else params.iCompressionOnOFFBoth=2; 
+            params.iCompressionOnOFFBoth = WAV_AND_OGG; 
+					else 
+            params.iCompressionOnOFFBoth = OGG_ONLY; 
 					
 					SendMessage(hOgg,BM_SETCHECK,1,0);
 					/*enabling the buttons from the ogg compression part*/
 					EnableWindow(hOggQuality,1);
 					EnableWindow(hOggNeedWav,1);
 				}
-				else{		    //compression OFF
+				else //compression OFF
+        {		    
 					bOgg=false;
 					SendMessage(hOgg,BM_SETCHECK,0,0);
 					
 					/*Sets the quality to 0, so we know that we should
 					  not compress the sound*/
-					params.iCompressionOnOFFBoth=1;  
+          params.iCompressionOnOFFBoth = WAV_ONLY;  
 					
 					/*disabling the buttons from the ogg compression part*/
 					EnableWindow(hOggQuality,0);
@@ -768,14 +853,16 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 
 			case NEED_WAV_BUTTON:
-				if(bStillNeedWav==false){
+				if(bStillNeedWav == false)
+        {
 					bStillNeedWav=true;
-					params.iCompressionOnOFFBoth=3;
+					params.iCompressionOnOFFBoth = WAV_AND_OGG;
 					SendMessage(hOggNeedWav,BM_SETCHECK,1,0);
 				}
-				else{
+				else
+        {
 					bStillNeedWav=false;
-					params.iCompressionOnOFFBoth=2;
+          params.iCompressionOnOFFBoth = OGG_ONLY;
 					SendMessage(hOggNeedWav,BM_SETCHECK,0,0);
 				}
 				break;
@@ -829,10 +916,11 @@ BOOL CALLBACK AboutDisplay(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam
 		  StringCchPrintf(szBuffer,MAX_PATH, TEXT("at %dHz"), params.iSampleRate);
 		  SetWindowText(GetDlgItem(hDlg, IDC_EDIT1),szBuffer);
 		 
-		  if(params.iStereo==2)	
-			SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Stereo");
-		  else SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Mono");
-		
+      if(params.iStereo==2)	
+        SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Stereo");
+      else 
+        SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Mono");
+
 		  StringCchPrintf(szBuffer,MAX_PATH, TEXT("%d Bits"), params.iBitsPerSample);
 		  SetWindowText(GetDlgItem(hDlg, IDC_EDIT3),szBuffer);
 		  //SetTimer(hDlg,NULL,10000,NULL);
