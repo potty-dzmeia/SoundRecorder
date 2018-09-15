@@ -5,8 +5,8 @@
 OGGencoder::OGGencoder(pPARAMS inputParams,char *szOutputFile){
 	params = *inputParams;
 	myFile.open(szOutputFile, ios::binary | ios::out);
-	if(params.iSampleRate!=11024)
-		params.iSampleRate=1;
+	//if(params.iSampleRate!=11024)
+	//	params.iSampleRate=1;
 }
 
 OGGencoder::~OGGencoder(void){

@@ -133,7 +133,7 @@ static OGGencoder* createOggEncoder(pPARAMS pParams)
   GetLocalTime(&tS);
   StringCchPrintf(szFile, MAX_PATH, TEXT("%s%u-%.2u-%.2u %.2u%.2u %.2u %.3u.ogg"), pParams->szDirectoryName, tS.wYear,tS.wMonth,tS.wDay,tS.wHour,tS.wMinute,tS.wSecond, tS.wMilliseconds);
   
-  OGGencoder *oggEncoder_A = new OGGencoder(&params,szFile);
+  OGGencoder *oggEncoder_A = new OGGencoder(pParams, szFile);
 
   if(!oggEncoder_A)
   {

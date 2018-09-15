@@ -1,0 +1,82 @@
+﻿Build started 9/16/2018 12:40:29 AM.
+     1>Project "C:\Development\SoundRecorder\directxProject\directxProject.vcxproj" on node 2 (rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file "Release\SoundRecorderProject.lastbuildstate".
+       PrepareForBuild:
+         Creating directory "C:\Development\SoundRecorder\Release\".
+       InitializeBuildStatus:
+         Creating "Release\SoundRecorderProject.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         c:\app\VS2010\VC\bin\CL.exe /c /I"..\oggvorbis-win32sdk-1.0\include" /I"C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include" /Zi /nologo /W4 /WX- /Od /Ob2 /Ot /Oy- /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt ..\main.cpp ..\MyMMFile.cpp ..\MyRecorder.cpp ..\OGGencoder.cpp
+         main.cpp
+     1>c:\app\VS2010\VC\include\cstdio(48): warning C4995: 'gets': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cstdio(52): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cstdio(55): warning C4995: 'vsprintf': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cstring(21): warning C4995: 'strcat': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cstring(22): warning C4995: 'strcpy': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cwchar(30): warning C4995: 'swprintf': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cwchar(31): warning C4995: 'vswprintf': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cwchar(33): warning C4995: 'wcscat': name was marked as #pragma deprecated
+     1>c:\app\VS2010\VC\include\cwchar(35): warning C4995: 'wcscpy': name was marked as #pragma deprecated
+     1>..\main.cpp(45): warning C4100: 'szCmdLine' : unreferenced formal parameter
+     1>..\main.cpp(44): warning C4100: 'hPrevInstance' : unreferenced formal parameter
+     1>..\main.cpp(424): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(424): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(428): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(428): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(565): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(565): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(664): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(664): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(670): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(670): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(690): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(690): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(697): warning C4995: 'sprintf': name was marked as #pragma deprecated
+     1>..\main.cpp(697): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\app\VS2010\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\main.cpp(817): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(817): warning C4100: 'wParam' : unreferenced formal parameter
+     1>..\main.cpp(858): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(881): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(900): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(924): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(1004): warning C4100: 'lParam' : unreferenced formal parameter
+     1>..\main.cpp(1075): warning C4100: 'lpszDrvName' : unreferenced formal parameter
+         MyMMFile.cpp
+     1>..\MyMMFile.cpp(14): warning C4244: '=' : conversion from 'int' to 'WORD', possible loss of data
+     1>..\MyMMFile.cpp(16): warning C4244: '=' : conversion from 'int' to 'WORD', possible loss of data
+         MyRecorder.cpp
+     1>..\MyRecorder.cpp(102): warning C4244: '=' : conversion from 'int' to 'WORD', possible loss of data
+     1>..\MyRecorder.cpp(104): warning C4244: '=' : conversion from 'int' to 'WORD', possible loss of data
+         OGGencoder.cpp
+     1>..\OGGencoder.cpp(63): warning C4244: 'argument' : conversion from 'time_t' to 'unsigned int', possible loss of data
+     1>..\OGGencoder.cpp(83): warning C4127: conditional expression is constant
+     1>..\OGGencoder.cpp(158): warning C4127: conditional expression is constant
+     1>..\OGGencoder.cpp(102): warning C4189: 'eos' : local variable is initialized but not referenced
+         Generating Code...
+       ResourceCompile:
+         c:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /l"0x0409" /nologo /fo"Release\resources.res" ..\resources.rc 
+       Link:
+         c:\app\VS2010\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Development\SoundRecorder\Release\SoundRecorder.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\Program Files (x86)\Microsoft DirectX SDK\Lib\x86" /LIBPATH:"..\oggvorbis-win32sdk-1.0\lib" ogg.lib vorbis.lib vorbisfile.lib vorbisenc.lib dsound.lib winmm.lib dxguid.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\SoundRecorder.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Development\SoundRecorder\Release\SoundRecorder.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Development\SoundRecorder\Release\SoundRecorder.lib" /MACHINE:X86 Release\resources.res
+         Release\main.obj
+         Release\MyMMFile.obj
+         Release\MyRecorder.obj
+         Release\OGGencoder.obj
+         directxProject.vcxproj -> C:\Development\SoundRecorder\Release\SoundRecorder.exe
+       Manifest:
+         c:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Development\SoundRecorder\Release\SoundRecorder.exe;#1" /manifest Release\SoundRecorder.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Release\SoundRecorderProject.unsuccessfulbuild".
+         Touching "Release\SoundRecorderProject.lastbuildstate".
+     1>Done Building Project "C:\Development\SoundRecorder\directxProject\directxProject.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.04
