@@ -71,24 +71,22 @@ bool OGGencoder :: initBitstream(){
      make the headers, then pass them to libvorbis one at a time;
      libvorbis handles the additional Ogg bitstream constraints */
 	ogg_packet header;
-    ogg_packet header_comm;
-    ogg_packet header_code;
+  ogg_packet header_comm;
+  ogg_packet header_code;
 
-    vorbis_analysis_headerout(&vd,&vc,&header,&header_comm,&header_code);
-    ogg_stream_packetin(&os,&header); /* automatically placed in its own
-					 page */
-    ogg_stream_packetin(&os,&header_comm);
-    ogg_stream_packetin(&os,&header_code);
+  vorbis_analysis_headerout(&vd,&vc,&header,&header_comm,&header_code);
+  ogg_stream_packetin(&os,&header); /* automatically placed in its own page */
+  ogg_stream_packetin(&os,&header_comm);
+  ogg_stream_packetin(&os,&header_code);
 
-	/* This ensures the actual
-	 * audio data will start on a new page, as per spec
-	 */
-	
-	while(1){
+	/* This ensures the actual audio data will start on a new page, as per spec*/
+	while(1)
+  {
 		int result=ogg_stream_flush(&os,&og);
-		if(result==0)break;
-		myFile.write((char*)og.header,og.header_len);
-		myFile.write((char*)og.body,og.body_len);		
+		if(result==0)
+      break;
+		myFile.write((char*)og.header, og.header_len);
+		myFile.write((char*)og.body, og.body_len);		
 	}
 	
 	return 1;
@@ -120,21 +118,24 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 	// uninterleave and copy the samples
 	if (params.iBitsPerSample == 8) 
 	{
-		for(i=0;i<params.iSampleRate/2;i++) {
-			for(int j=0;j<params.iStereo;j++) {
+		for(i=0;i<params.iSampleRate/2;i++) 
+    {
+			for(int j=0;j<params.iStereo;j++) 
+      {
 				inputBuffer[j][i]=((int)(pReadBuffer[i*params.iStereo + j])-128)/128.0f;
-            }
-        }
-     } 
-	 else 
-	 {
-		 for(i=0;i<params.iSampleRate/2;i++) {
-			for(int j=0;j<params.iStereo;j++) {
-				inputBuffer[j][i]=((int)(pReadBuffer[i*2*params.iStereo +2*j +1]<<8) |
-					(pReadBuffer[i*2*params.iStereo+2*j] & 0xff))/32768.0f;
-             }
-         }
-     }
+      }
+    }
+  } 
+  else 
+  {
+    for(i=0;i<params.iSampleRate/2;i++) 
+    {
+      for(int j=0;j<params.iStereo;j++) 
+      {
+        inputBuffer[j][i]=((int)(pReadBuffer[i*2*params.iStereo +2*j +1]<<8) | (pReadBuffer[i*2*params.iStereo+2*j] & 0xff))/32768.0f;
+      }
+    }
+  }
 	
 	
 	/* tell the library how much we actually submitted */
@@ -142,14 +143,14 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 	/* vorbis does some data preanalysis, then divvies up blocks for
 	   more involved (potentially parallel) processing.  Get a single
 	   block for encoding now */
-	while(vorbis_analysis_blockout(&vd,&vb)==1){
-		
+	while(vorbis_analysis_blockout(&vd,&vb)==1)
+  {
 		/* analysis, assume we want to use bitrate management */
 		vorbis_analysis(&vb,NULL);
 		vorbis_bitrate_addblock(&vb);
 
-		while(vorbis_bitrate_flushpacket(&vd,&op)){
-	
+		while(vorbis_bitrate_flushpacket(&vd,&op))
+    {
 			/* weld the packet into the bitstream */
 			ogg_stream_packetin(&os,&op);
 	
@@ -171,7 +172,8 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 			 }//while(1)
 		}//while(vorbis_bitrate_flushpacket(&vd,&op))
 	}//while(vorbis_analysis_blockout(&vd,&vb)==1)
-	//vorbis_analysis_wrote(&vd,0);
+	
+  //vorbis_analysis_wrote(&vd,0);
 	return 1;
 }
 
@@ -183,6 +185,7 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 bool OGGencoder :: cleanup(){
 	/* clean up and exit.  vorbis_info_clear() must be called last */
   
+   vorbis_analysis_wrote(&vd,0);
 	 ogg_stream_clear(&os);
 	 vorbis_block_clear(&vb);
 	 vorbis_dsp_clear(&vd);

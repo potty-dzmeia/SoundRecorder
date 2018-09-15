@@ -3,16 +3,17 @@
 
 #pragma once
 
-class MyRecorder{
+class MyRecorder
+{
 private:
 	//for capturing
-	LPDIRECTSOUNDCAPTURE		lpDSC;			//pointer to DirectSoundCapture object
+	LPDIRECTSOUNDCAPTURE		    lpDSC;			//pointer to DirectSoundCapture object
 	LPDIRECTSOUNDCAPTUREBUFFER	lpDSCB;			//pointer to DirectSoundCaptureBuffer
 	LPDIRECTSOUNDCAPTUREBUFFER8 lpDSCB8;		//interface used to manipulate sound capture buffer
-	WAVEFORMATEX				wfxC;			//WFX structure for using with the capture buffer
-	DSCBUFFERDESC				dscbdesc;		//Description of the DSCapture buffer /Must be the same format as the play buffer/
-	signed char					*pbDataToWrite;	//data from the soundcard
-	PARAMS						params;			//parameters
+	WAVEFORMATEX				        wfxC;			  //WFX structure for using with the capture buffer
+	DSCBUFFERDESC				        dscbdesc;		//Description of the DSCapture buffer /Must be the same format as the play buffer/
+	signed char					        *pbDataToWrite;	//data from the soundcard
+	PARAMS						          params;			//parameters
 
 public:
 	MyRecorder();

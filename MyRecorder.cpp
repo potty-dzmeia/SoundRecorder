@@ -3,20 +3,23 @@
 //------------------------------------------------------------------
 //							Constructor/Destructor
 //------------------------------------------------------------------
-MyRecorder :: MyRecorder(){
+MyRecorder :: MyRecorder()
+{
   lpDSC=NULL;	
   lpDSCB=NULL;
   lpDSCB8=NULL;
   pbDataToWrite=NULL;
 
-  if(!InitDSCaptureCreate()){
+  if(!InitDSCaptureCreate())
+  {
     MessageBox(params.hwnd, TEXT("Error in InitDSCaptureCreate function call"), TEXT("Error"),MB_OK); 
     ShutDown();
   }
-
 }
 
-MyRecorder :: MyRecorder(pPARAMS pParams){	
+
+MyRecorder :: MyRecorder(pPARAMS pParams)
+{	
   lpDSC=NULL;	
   lpDSCB=NULL;
   lpDSCB8=NULL;
@@ -157,14 +160,16 @@ BOOL MyRecorder :: CreateMyCaptureBuffer(){
 
   return 1;
 }
+
+
 //----------------------------------------------------------------------------
 //						 Adds the notification points
 //----------------------------------------------------------------------------
-BOOL MyRecorder :: AddNotificationEvents(){
+BOOL MyRecorder :: AddNotificationEvents()
+{
   LPDIRECTSOUNDNOTIFY8	lpDSNotify;			//for the notification events
   DSBPOSITIONNOTIFY		rgdsbpn[2];			//structures for the Events
   HRESULT					hr;
-
 
 
   if (S_OK!=lpDSCB8->QueryInterface(IID_IDirectSoundNotify, (LPVOID*)&lpDSNotify)){
@@ -173,8 +178,9 @@ BOOL MyRecorder :: AddNotificationEvents(){
     return 0;
   }
 
-
-  for (int i = 0; i <2; i++){			//Creating the Events
+  //Creating the Events
+  for (int i = 0; i <2; i++)
+  {			
     rghEvent[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (NULL == rghEvent[i]){
       MessageBox(params.hwnd, TEXT("Error when creating Events"), TEXT("Error"), MB_OK | MB_ICONEXCLAMATION);
@@ -212,10 +218,10 @@ signed char* MyRecorder :: ReadFromSoundCard(DWORD dwBufferOffset)
 {
 
   LPVOID  lpvPtr1;	//Address of a pointer to contain the first block of the sound buffer to be locked 
-  DWORD	dwBytes1;	//Address of a variable to contain the number of bytes pointed to by the lplpvAudioPtr1 parameter.
+  DWORD	  dwBytes1;	//Address of a variable to contain the number of bytes pointed to by the lplpvAudioPtr1 parameter.
   LPVOID  lpvPtr2;	//second pointer
-  DWORD	dwBytes2;	//second variable 
-  DWORD	dwReader;	//we  must not read data after the ReadCursor
+  DWORD	  dwBytes2;	//second variable 
+  DWORD	  dwReader;	//we  must not read data after the ReadCursor
 
   if(DS_OK!=lpDSCB8->GetCurrentPosition(NULL, &dwReader)){	//Gets the position of the read cursor
     MessageBox(params.hwnd, TEXT("Error when trying to call lpDSCB->GetCurrentPosition "), TEXT("Error"), MB_OK | MB_ICONEXCLAMATION);
