@@ -32,68 +32,65 @@ BOOL CALLBACK AboutCaptureDevice(HWND, UINT, WPARAM, LPARAM);
 
 BOOL CALLBACK DSEnumProc(LPGUID lpGUID, LPCTSTR lpszDesc,LPCTSTR lpszDrvName, LPVOID lpContext);
 
-float translateToFloat(int);//Translates quality from -1to10 to -0.1to10
+float translateToFloat(int); // Translates quality from -1to10 to -0.1to10
 
-PARAMS		params;//params for the thread
-
-HWND		hwndDisplay, hwndDisplay1;//The display windows
-
+PARAMS		  params;//params for the thread
+HWND		    hwndDisplay, hwndDisplay1;//The display windows
 TCHAR				szBuffer[MAX_PATH];// char buffer used for different things
  
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     PSTR szCmdLine, int iCmdShow)
 { 
-	 //---------------------------------
-     HWND         hwnd ;
-     MSG          msg ;
-     WNDCLASSEX   wndclass;
-	 HMENU		  hMenu;
-	  
-	 wndclass.cbSize		= sizeof(wndclass);
-     wndclass.style         = CS_HREDRAW | CS_VREDRAW ;
-     wndclass.lpfnWndProc   = WndProc ;
-     wndclass.cbClsExtra    = 0 ;
-     wndclass.cbWndExtra    = 0 ;
-     wndclass.hInstance     = hInstance ;
-     wndclass.hIcon         = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON1)) ;
-     wndclass.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
-     wndclass.hbrBackground = (HBRUSH)CreateSolidBrush (RGB(184,200,242)) ;
-     wndclass.lpszMenuName  = NULL ;
-     wndclass.lpszClassName = POTTY_RECORDER ;
-	 wndclass.hIconSm		= NULL;
+  HWND         hwnd ;
+  MSG          msg ;
+  WNDCLASSEX   wndclass;
+  HMENU		     hMenu;
 
-     if (!RegisterClassEx (&wndclass))
-     {
-          MessageBox (NULL, TEXT ("This program requires Windows NT!"), 
-                      szBuffer, MB_ICONERROR) ;
-          return 0 ;
-     }
+  wndclass.cbSize		     = sizeof(wndclass);
+  wndclass.style         = CS_HREDRAW | CS_VREDRAW ;
+  wndclass.lpfnWndProc   = WndProc ;
+  wndclass.cbClsExtra    = 0 ;
+  wndclass.cbWndExtra    = 0 ;
+  wndclass.hInstance     = hInstance ;
+  wndclass.hIcon         = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON1)) ;
+  wndclass.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
+  wndclass.hbrBackground = (HBRUSH)CreateSolidBrush (RGB(184,200,242)) ;
+  wndclass.lpszMenuName  = NULL ;
+  wndclass.lpszClassName = POTTY_RECORDER ;
+  wndclass.hIconSm		   = NULL;
 
-	 hMenu=LoadMenu(hInstance, MAKEINTRESOURCE (IDR_MENU1));
+  if (!RegisterClassEx (&wndclass))
+  {
+    MessageBox (NULL, TEXT ("This program requires Windows NT!"), 
+      szBuffer, MB_ICONERROR) ;
+    return 0 ;
+  }
 
-	 sprintf_s(szBuffer, "%s v%.1f         Ham Radio software", POTTY_RECORDER, POTTY_RECORDER_VERSION);
-     hwnd = CreateWindow (POTTY_RECORDER,             // window class name
-                          szBuffer,					  // window caption
-                          WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX,// window style
-                          CW_USEDEFAULT,              // initial x position
-                          CW_USEDEFAULT,              // initial y position
-                          500,						  // initial x size
-                          360,						  // initial y size
-                          NULL,                       // parent window handle
-                          hMenu,                       // window menu handle
-                          hInstance,                  // program instance handle
-                          NULL) ;                     // creation parameters
-     
-     ShowWindow (hwnd, iCmdShow) ;
-     UpdateWindow (hwnd) ;
-     
-     while (GetMessage (&msg, NULL, 0, 0))
-     {
-          TranslateMessage (&msg) ;
-          DispatchMessage (&msg) ;
-     }
-     return (int)msg.wParam ;
+  hMenu=LoadMenu(hInstance, MAKEINTRESOURCE (IDR_MENU1));
+
+  sprintf_s(szBuffer, "%s v%.1f         Ham Radio software", POTTY_RECORDER, POTTY_RECORDER_VERSION);
+  hwnd = CreateWindow (POTTY_RECORDER,             // window class name
+                       szBuffer,					  // window caption
+                       WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX,// window style
+                       CW_USEDEFAULT,              // initial x position
+                       CW_USEDEFAULT,              // initial y position
+                       500,						  // initial x size
+                       360,						  // initial y size
+                       NULL,                       // parent window handle
+                       hMenu,                       // window menu handle
+                       hInstance,                  // program instance handle
+                       NULL) ;                     // creation parameters
+
+  ShowWindow (hwnd, iCmdShow) ;
+  UpdateWindow (hwnd) ;
+
+  while (GetMessage (&msg, NULL, 0, 0))
+  {
+    TranslateMessage (&msg) ;
+    DispatchMessage (&msg) ;
+  }
+  return (int)msg.wParam ;
 }
 
 
@@ -239,7 +236,7 @@ void Thread(PVOID input)
 {                  
   signed char	  *pCaptureBuffer;	    
   volatile      pPARAMS	pParams = (pPARAMS)input;	
-  int					  iCaptureBufferSize = (pParams->iSampleRate*pParams->iStereo*pParams->iBitsPerSample) / 8; //Buffer size for one second of sound data
+  int					  iCaptureBufferSize = (pParams->iSampleRate*pParams->iNumberOfChannels*pParams->iBitsPerSample) / 8; //Buffer size for one second of sound data
   OGGencoder    *oggEncoder_A = NULL;
   OGGencoder    *oggEncoder_B = NULL;
   MyMMFile      *myMMFile_A   = NULL; 
@@ -391,14 +388,11 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
    PAINTSTRUCT		ps;	
 	 static HWND		hStart, hStop, hSampleRate, hFileSize, hOverlapping;
 	 static HWND		hMono, hStereo, hBits, hRecordingControl,hDevCaps;
-	 static BOOL		bStereo;//Flag used for the Mono and Stereo buttons
 	 static HWND    hOgg,hOggQuality,hOggNeedWav;
 	 static HBRUSH  hBrushStatic;
-	 //OSVERSIONINFO		osVersionInfo;
 	 
-	 static bool		bOgg, bStillNeedWav;//used for the two checkboxes 
-
-	 static BOOL		bRecording;//if its TRUE there is a thread running
+	 static bool		bOgg, bStillNeedWav; // used for the two checkboxes 
+	 static BOOL		bRecording; // if its TRUE there is a thread running
 
 	 //for directory select dialog box
 	 static BROWSEINFO	browseInfo;
@@ -440,15 +434,14 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("11024"));
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("22050"));
 		  SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("44100"));
-          SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("48000"));
-          SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("96000"));
+      SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("48000"));
+      SendMessage(hSampleRate,CB_ADDSTRING,0,(LPARAM)TEXT("96000"));
 		  SendMessage(hSampleRate, CB_SELECTSTRING, (WPARAM)-1, (LPARAM)TEXT("11024"));
 		  
 		  //Mono
 		  hMono=CreateWindow("button", "Mono", WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_BORDER,
         20,89,70,22,hwnd,(HMENU)MONO_BUTTON, hInstance,NULL);
 		  SendMessage(hMono, BM_SETCHECK, 1,0);//sets the Mono button checked
-		  bStereo=0;
 		  //Stereo
 		  hStereo=CreateWindow("button", "Stereo", WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_BORDER,
 						100,89,70,22,hwnd,(HMENU)STEREO_BUTTON, hInstance,NULL);
@@ -490,11 +483,11 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  browseInfo.lpfn=NULL;
 
 		  //Initializing the configuration PARAMS
-          params.deviceLPGUID = NULL;
+      params.deviceLPGUID = NULL;
 		  params.iBitsPerSample=16;
 		  params.iFileSizeInSeconds=DEFAULT_LENGTH_IN_SECS;
 		  params.iSampleRate=11024;
-		  params.iStereo = 1;
+		  params.iNumberOfChannels = 1;
 		  bRecording=0;
 		  params.hwnd=hwnd;
 		  params.bKill=0;
@@ -530,7 +523,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  return 0 ;
 
      case WM_PAINT:
-          hdc = BeginPaint (hwnd, &ps) ;
+      hdc = BeginPaint (hwnd, &ps) ;
 		  
 		  SetBkColor(hdc, RGB(184,200,242));
 		  TextOut(hdc,100, 7, "File size in seconds", (int)strlen("File size in seconds"));
@@ -547,10 +540,9 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		  TextOut(hdc, 270, 128, "Choose the needed quality", (int) strlen("Choose the needed quality"));	  
 		  TextOut(hdc, 315, 145, "(from -1 to 10)", (int)  strlen("(from -1 to 10)"));	  
 		  TextOut(hdc, 278, 190, "But I still need the .wav files", (int) strlen("But i still need the .wav files"));	  
-		 
 		  
 		  EndPaint (hwnd, &ps) ;
-          return 0 ;
+      return 0 ;
 	 
 	 case WM_COMMAND:
 		  switch (LOWORD (wParam))
@@ -569,13 +561,14 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				
 				
 				params.iFilesWritten=1; // It is the first file written
-                bRecording=1;//recording flag on;
+        bRecording=1;//recording flag on;
 				params.bKill=0;//do not close the thread;
 
 				SendMessage(hwndDisplay1,WM_INITDIALOG,0,0);
 				ShowWindow(hwndDisplay1,SW_HIDE);
 				
-				if(!_beginthread(Thread,0,&params)){//if error
+				if(!_beginthread(Thread,0,&params))
+        {//if error
 					MessageBox(hwnd, "Could not start the recorder","Error", MB_OK);
 					bRecording=0;
 					break;
@@ -584,6 +577,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				EnableWindow(hStart,0);
 				EnableWindow(hSampleRate,0);
 				EnableWindow(hFileSize,0);
+        EnableWindow(hOverlapping,0);
 				EnableWindow(hMono,0);
 				EnableWindow(hStereo,0);
 				EnableWindow(hBits,0);
@@ -613,6 +607,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				EnableWindow(hStart,1);
 				EnableWindow(hSampleRate,1);
 				EnableWindow(hFileSize,1);
+        EnableWindow(hOverlapping,1);
 				EnableWindow(hMono,1);
 				EnableWindow(hStereo,1);
 				EnableWindow(hBits,1);
@@ -626,29 +621,28 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					EnableWindow(hOggNeedWav,1);
 				}
 
-				Sleep(1001);//sleep for one second so the thread is closed for sure.
-
-                bRecording=0;//not recording flag
+				Sleep(1001); //sleep for one second so the thread is closed for sure.
+        bRecording=0;//not recording flag
 				break;
 				
 
       case MONO_BUTTON:
-				if(bStereo){
+				if(params.iNumberOfChannels == 2)
+        {
 					SendMessage(hStereo, BM_SETCHECK, 0, 0);
 					SendMessage(hMono, BM_SETCHECK, 1, 0);
-					bStereo=0;
-					params.iStereo=1;
+					params.iNumberOfChannels=1;
 				}
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);//send message to Display1 so it can update the filesize MB/min
 				break;
 
 
       case STEREO_BUTTON:
-				if(!bStereo){
+				if(params.iNumberOfChannels == 1)
+        {
 					SendMessage(hMono, BM_SETCHECK, 0,0);
 					SendMessage(hStereo, BM_SETCHECK, 1,0);	
-					bStereo=1;
-					params.iStereo=2;
+					params.iNumberOfChannels=2;
 				}
 				SendMessage(hwndDisplay1,WM_COMMAND,33,0);//send message to Display1 so it can update the filesize MB/min
 				break;
@@ -814,6 +808,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
      return DefWindowProc (hwnd, message, wParam, lParam) ;
 }
 
+
 BOOL CALLBACK AboutDisplay(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR szBuffer[MAX_PATH];
@@ -826,14 +821,13 @@ BOOL CALLBACK AboutDisplay(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam
 		  StringCchPrintf(szBuffer,MAX_PATH, TEXT("at %dHz"), params.iSampleRate);
 		  SetWindowText(GetDlgItem(hDlg, IDC_EDIT1),szBuffer);
 		 
-      if(params.iStereo==2)	
+      if(params.iNumberOfChannels==2)	
         SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Stereo");
       else 
         SetWindowText(GetDlgItem(hDlg, IDC_EDIT2),"Mono");
 
 		  StringCchPrintf(szBuffer,MAX_PATH, TEXT("%d Bits"), params.iBitsPerSample);
 		  SetWindowText(GetDlgItem(hDlg, IDC_EDIT3),szBuffer);
-		  //SetTimer(hDlg,NULL,10000,NULL);
 		  
 		  StringCchPrintf(szBuffer,MAX_PATH, TEXT("files written:%d"), params.iFilesWritten);
 		  SetWindowText(GetDlgItem(hDlg, IDC_EDIT4),szBuffer);
@@ -843,11 +837,7 @@ BOOL CALLBACK AboutDisplay(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam
 			  SetWindowText(GetDlgItem(hDlg, IDC_EDIT6),szBuffer);
 		  }
 		  return TRUE ;
-	 //case WM_TIMER:
-		  //how many files there are created
-	//	  wsprintf(szBuffer,"files written:%d", params.iFilesWritten);
-	//	  SetWindowText(GetDlgItem(hDlg, IDC_EDIT4),szBuffer);
-	//	  return 0;
+
 	 case WM_CLOSE : 
 		  DestroyWindow(hDlg);
 		  return TRUE;
@@ -855,280 +845,281 @@ BOOL CALLBACK AboutDisplay(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam
      return FALSE ;
 }
 
-BOOL CALLBACK AboutAbout(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
-	switch (message)
+
+BOOL CALLBACK AboutAbout(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  switch (message)
+  {
+  case WM_INITDIALOG:
+    SetDlgItemText(hDlg, IDC_EDITABOUT, "Open source recording software github.com/potty-dzmeia/SoundRecorder");
+    sprintf_s(szBuffer, "version:%.1f\n LZ1ABC %s", POTTY_RECORDER_VERSION, POTTY_RECORDER_VERSION_YEAR); 
+    SetDlgItemText(hDlg, IDC_STATIC1, szBuffer); 
+    return TRUE;
+  case WM_COMMAND:
+    switch(LOWORD(wParam))
     {
-	   case WM_INITDIALOG:
-			//SetWindowText(GetDlgItem(hDlg,IDC_EDITABOUT),"Freeware recording software. \n http://www.qsl.net/lz1abc/software.htm");
-		    SetDlgItemText(hDlg, IDC_EDITABOUT, "Freeware recording software. http://www.qsl.net/lz1abc/software.htm");
-			sprintf_s(szBuffer, "LZ1ABC %s, version:%.1f", POTTY_RECORDER_VERSION_YEAR, POTTY_RECORDER_VERSION); 
-			SetDlgItemText(hDlg, IDC_STATIC1, szBuffer);
-			//LZ1ABC 2018 \n version 1.0 
-			return TRUE;
-	   case WM_COMMAND:
-			switch(LOWORD(wParam))
-			{
-				case IDOK:
-					EndDialog(hDlg,0);
-					return TRUE;
-			}
-			break;
-     }
-    return FALSE ;
+    case IDOK:
+      EndDialog(hDlg,0);
+      return TRUE;
+    }
+    break;
+  }
+  return FALSE ;
 
 }
 
-BOOL CALLBACK AboutIndex(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
-	switch (message)
+
+BOOL CALLBACK AboutIndex(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  switch (message)
+  {
+  case WM_INITDIALOG:
+    SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),"github.com/potty-dzmeia/SoundRecorder");
+    return TRUE;
+  case WM_COMMAND:
+    switch(LOWORD(wParam))
     {
-	   case WM_INITDIALOG:
-		   SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),"http://www.qsl.net/lz1abc/software.htm");
-		   return TRUE;
-	   case WM_COMMAND:
-			switch(LOWORD(wParam))
-			{
-				case IDCLOSE:
-					EndDialog(hDlg,0);
-					return TRUE;
-			}
-			break;
-     }
-    return FALSE ;
+    case IDCLOSE:
+      EndDialog(hDlg,0);
+      return TRUE;
+    }
+    break;
+  }
+  return FALSE ;
 
 }
+
 
 BOOL CALLBACK AboutDisplay1(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
-	TCHAR	szBuffer[MAX_PATH];
-	
-	switch (message)
+  TCHAR	szBuffer[MAX_PATH];
+
+  switch (message)
+  {
+  case WM_INITDIALOG:
+    sprintf_s(szBuffer,"Wav file size: %.2f MB/sec",(((double)params.iBitsPerSample*params.iSampleRate*params.iNumberOfChannels)/8388608)*60);
+    SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
+    return TRUE;
+  case WM_COMMAND:
+    switch(wParam)
     {
-	   case WM_INITDIALOG:
-		   sprintf_s(szBuffer,"Wav file size: %.2f MB/sec",(((double)params.iBitsPerSample*params.iSampleRate*params.iStereo)/8388608)*60);
-		   SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
-		    return TRUE;
-	   case WM_COMMAND:
-			switch(wParam)
-			{
-				case 33:
-					sprintf_s(szBuffer,"Wav file size: %.2f MB/min",(((double)params.iBitsPerSample*params.iSampleRate*params.iStereo)/8388608)*60);
-					SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
-					return FALSE;
-			}
-		  
-		    break;
-     }
-    return FALSE ;
+    case 33:
+      sprintf_s(szBuffer,"Wav file size: %.2f MB/min",(((double)params.iBitsPerSample*params.iSampleRate*params.iNumberOfChannels)/8388608)*60);
+      SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
+      return FALSE;
+    }
+
+    break;
+  }
+  return FALSE ;
 
 }
 
 BOOL CALLBACK AboutDevCaps(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
-	
-	DSCCAPS dsccaps;
-	MyRecorder *myRecorder = NULL;
-	
-	
-	
-	switch (message)
+
+  DSCCAPS dsccaps;
+  MyRecorder *myRecorder = NULL;
+
+  switch (message)
+  {
+  case WM_INITDIALOG:
+    myRecorder = new MyRecorder(&params);
+    if(!myRecorder)
     {
-	   case WM_INITDIALOG:
-		   myRecorder = new MyRecorder(&params);
-           if(!myRecorder)
-           {
-		        MessageBox(hDlg, "Stop recording and try again", "Error", MB_OK);
-		        EndDialog(hDlg,0);
-	       }
-           dsccaps=*myRecorder->GetDevCaps();
+      MessageBox(hDlg, "Stop recording and try again", "Error", MB_OK);
+      EndDialog(hDlg,0);
+    }
+    dsccaps=*myRecorder->GetDevCaps();
 
 
-		   SendDlgItemMessage(hDlg,IDC_EDIT1, EM_SETREADONLY,1,0);
-		   sprintf_s(szBuffer, "%u", dsccaps.dwChannels);
-		   SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
-		
-		   if( dsccaps.dwFlags & DSCCAPS_CERTIFIED)
-				SendMessage(GetDlgItem(hDlg,IDC_RADIO1),BM_SETCHECK,1,0);
-		   if( dsccaps.dwFlags & DSCCAPS_EMULDRIVER)
-				SendMessage(GetDlgItem(hDlg,IDC_RADIO2),BM_SETCHECK,1,0);
-		   if ( dsccaps.dwFlags & DSCCAPS_MULTIPLECAPTURE)
-				SendMessage(GetDlgItem(hDlg,IDC_RADIO3),BM_SETCHECK,1,0);
-		  
-		
-		   
-		   if(dsccaps.dwFormats&WAVE_FORMAT_96S16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, stereo, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_96M16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, mono, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_96S08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, stereo, 8-bit"); 
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_96M08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, mono, 8-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_4S16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, stereo, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_4S08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, stereo, 8-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_4M08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, mono, 8-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_2S16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, stereo, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_2S08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, stereo, 8-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_2M16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, mono, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_2M08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, mono, 8-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_1S16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, stereo, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_1S08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, stereo, 8-bit");
-	       else if(dsccaps.dwFormats&WAVE_FORMAT_1M16)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, mono, 16-bit");
-		   else if(dsccaps.dwFormats&WAVE_FORMAT_1M08)
-				SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, mono, 8-bit");
-		   return TRUE;
+    SendDlgItemMessage(hDlg,IDC_EDIT1, EM_SETREADONLY,1,0);
+    sprintf_s(szBuffer, "%u", dsccaps.dwChannels);
+    SetWindowText(GetDlgItem(hDlg,IDC_EDIT1),szBuffer);
 
-	   case WM_COMMAND:
-			switch(LOWORD(wParam))
-			{
-				case IDOK:
-					if(!myRecorder)
-					  delete(myRecorder);
-					EndDialog(hDlg,0);
-					return TRUE;
-			}
-			break;
-     }
-    return FALSE ;
+    if( dsccaps.dwFlags & DSCCAPS_CERTIFIED)
+      SendMessage(GetDlgItem(hDlg,IDC_RADIO1),BM_SETCHECK,1,0);
+    if( dsccaps.dwFlags & DSCCAPS_EMULDRIVER)
+      SendMessage(GetDlgItem(hDlg,IDC_RADIO2),BM_SETCHECK,1,0);
+    if ( dsccaps.dwFlags & DSCCAPS_MULTIPLECAPTURE)
+      SendMessage(GetDlgItem(hDlg,IDC_RADIO3),BM_SETCHECK,1,0);
+
+
+
+    if(dsccaps.dwFormats&WAVE_FORMAT_96S16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, stereo, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_96M16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, mono, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_96S08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, stereo, 8-bit"); 
+    else if(dsccaps.dwFormats&WAVE_FORMAT_96M08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"96 kHz, mono, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_4S16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, stereo, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_4S08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, stereo, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_4M08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"44.1 kHz, mono, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_2S16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, stereo, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_2S08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, stereo, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_2M16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, mono, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_2M08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"22.05 kHz, mono, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_1S16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, stereo, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_1S08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, stereo, 8-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_1M16)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, mono, 16-bit");
+    else if(dsccaps.dwFormats&WAVE_FORMAT_1M08)
+      SendMessage(GetDlgItem(hDlg,IDC_LIST1),LB_ADDSTRING,0,(LPARAM)"11.025 kHz, mono, 8-bit");
+    return TRUE;
+
+  case WM_COMMAND:
+    switch(LOWORD(wParam))
+    {
+    case IDOK:
+      if(!myRecorder)
+        delete(myRecorder);
+      EndDialog(hDlg,0);
+      return TRUE;
+    }
+    break;
+  }
+  return FALSE ;
 
 }
 
 // Procedure for selecting capture device
 BOOL CALLBACK AboutCaptureDevice(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HWND        hComboBox;
-    LRESULT     lResult, lResult1 ;
+  HWND        hComboBox;
+  LRESULT     lResult, lResult1 ;
 
-    hComboBox = GetDlgItem(hDlg, IDC_COMBO_CAPTUREDEVICE);
+  hComboBox = GetDlgItem(hDlg, IDC_COMBO_CAPTUREDEVICE);
 
-	switch (message)
+  switch (message)
+  {
+  case WM_INITDIALOG:         
+    // Init the ComboBox
+    //------------------------------------------------------------------------------------
+    // Enumerate all sound capture devices and add them to the combobox
+    DirectSoundCaptureEnumerate(&DSEnumProc,(VOID*)hComboBox);
+
+    // Read the number of entries
+    lResult = SendMessage(hComboBox, CB_GETCOUNT, 0, 0); 
+    // Check wich capture device was selected previously and set it as an active selection
+    for(int i = 0; i<lResult; i++)
     {
-	   case WM_INITDIALOG:         
-           // Init the ComboBox
-           //------------------------------------------------------------------------------------
-           // Enumerate all sound capture devices and add them to the combobox
-           DirectSoundCaptureEnumerate(&DSEnumProc,(VOID*)hComboBox);
-             
-           // Read the number of entries
-           lResult = SendMessage(hComboBox, CB_GETCOUNT, 0, 0); 
-           // Check wich capture device was selected previously and set it as an active selection
-           for(int i = 0; i<lResult; i++)
-           {
-               // Check if the GUID is the same with the current selection
-              lResult1 = SendMessage(hComboBox, CB_GETITEMDATA, i, 0);
-              switch(lResult1)
-              {
-                    case NULL: // Current selection is default          
-                        if (params.deviceLPGUID == NULL) // and the previous select was the default
-                            SendMessage(hComboBox, CB_SETCURSEL , i, 0); 
-                        break;
-                    default: // Current selection is notdefault
-                        if ( params.deviceLPGUID == NULL  ) //if the last selection was the default - break
-                            break;
-                        if( params.deviceLPGUID->Data1 == ((LPGUID)lResult1)->Data1 &&
-                            params.deviceLPGUID->Data2 == ((LPGUID)lResult1)->Data2   )
-                            SendMessage(hComboBox, CB_SETCURSEL , i, 0); 
-                            break;
-              }//switch
-           }   
-           //End initing ComboBdox
-           //------------------------------------------------------------------------------------
-		    return TRUE;
+      // Check if the GUID is the same with the current selection
+      lResult1 = SendMessage(hComboBox, CB_GETITEMDATA, i, 0);
+      switch(lResult1)
+      {
+      case NULL: // Current selection is default          
+        if (params.deviceLPGUID == NULL) // and the previous select was the default
+          SendMessage(hComboBox, CB_SETCURSEL , i, 0); 
+        break;
+      default: // Current selection is notdefault
+        if ( params.deviceLPGUID == NULL  ) //if the last selection was the default - break
+          break;
+        if( params.deviceLPGUID->Data1 == ((LPGUID)lResult1)->Data1 &&
+          params.deviceLPGUID->Data2 == ((LPGUID)lResult1)->Data2   )
+          SendMessage(hComboBox, CB_SETCURSEL , i, 0); 
+        break;
+      }//switch
+    }   
+    //End initing ComboBdox
+    //------------------------------------------------------------------------------------
+    return TRUE;
 
 
-	   case WM_COMMAND:
-			switch(LOWORD(wParam))
-			{
-				case IDOK:
-					EndDialog(hDlg,0);
-					return TRUE;
-                case IDC_COMBO_CAPTUREDEVICE:
-                    // The selection in the combobox has changed
-					if(HIWORD(wParam)== CBN_SELCHANGE)
-                    { 
-                        // Read the selected string ID
-                        lResult = SendMessage(hComboBox, CB_GETCURSEL, 0, 0);
-                        // Read the item attached to it
-                        params.deviceLPGUID = (LPGUID) SendMessage(hComboBox, CB_GETITEMDATA, lResult, 0);           
-                    }
-                    return TRUE;
-			}
-			break;
-       case WM_CLOSE:
-           EndDialog(hDlg,0);
-		   return TRUE;
-     }
-    return FALSE ;
+  case WM_COMMAND:
+    switch(LOWORD(wParam))
+    {
+    case IDOK:
+      EndDialog(hDlg,0);
+      return TRUE;
+    case IDC_COMBO_CAPTUREDEVICE:
+      // The selection in the combobox has changed
+      if(HIWORD(wParam)== CBN_SELCHANGE)
+      { 
+        // Read the selected string ID
+        lResult = SendMessage(hComboBox, CB_GETCURSEL, 0, 0);
+        // Read the item attached to it
+        params.deviceLPGUID = (LPGUID) SendMessage(hComboBox, CB_GETITEMDATA, lResult, 0);           
+      }
+      return TRUE;
+    }
+    break;
+  case WM_CLOSE:
+    EndDialog(hDlg,0);
+    return TRUE;
+  }
+  return FALSE ;
 }
 
 
 // Enumerates all sound capture devices
 BOOL CALLBACK DSEnumProc(LPGUID  lpGUID,      // Address of the GUID that identifies the device being enumerated, or NULL for the primary device. 
-						 LPCTSTR lpszDesc,    // Address of a null-terminated string that provides a textual description of the DirectSound device.
-						 LPCTSTR lpszDrvName, // Address of a null-terminated string that specifies the module name of the DirectSound driver corresponding to this device. 
-						 LPVOID  lpContext)   // Address of application-defined data. This is the pointer passed to DirectSoundEnumerate or DirectSoundCaptureEnumerate as the lpContext parameter. 
+                         LPCTSTR lpszDesc,    // Address of a null-terminated string that provides a textual description of the DirectSound device.
+                         LPCTSTR lpszDrvName, // Address of a null-terminated string that specifies the module name of the DirectSound driver corresponding to this device. 
+                         LPVOID  lpContext)   // Address of application-defined data. This is the pointer passed to DirectSoundEnumerate or DirectSoundCaptureEnumerate as the lpContext parameter. 
 {
-	 HWND    hCombo = (HWND)lpContext;
-	 LPGUID  lpTemp = NULL;
-     LRESULT tempLResult;
-	 
-    // If not the primary capture device copy the data from the structure
-    if(lpGUID !=NULL) 
-    {    
-       lpTemp = (LPGUID)malloc(sizeof(GUID));
-	   if (lpTemp == NULL)
-	       return(TRUE);
-       memcpy(lpTemp, lpGUID, sizeof(GUID));
-    }
+  HWND    hCombo = (HWND)lpContext;
+  LPGUID  lpTemp = NULL;
+  LRESULT tempLResult;
 
-    // Add the capture device name to the combo box
-    tempLResult = SendMessage((HWND)hCombo, (UINT)CB_ADDSTRING, 0, (LPARAM)lpszDesc);
-    if(tempLResult == LB_ERR)
-        MessageBox(NULL, TEXT("Couldn't add text to the combo box 1"), TEXT("Error"), MB_OK);
-	
-    // Add the associated value (the address of the first field of the structure)
-	SendMessage(hCombo, 
-                CB_SETITEMDATA, 
-                tempLResult,
-                (LPARAM) lpTemp);
+  // If not the primary capture device copy the data from the structure
+  if(lpGUID !=NULL) 
+  {    
+    lpTemp = (LPGUID)malloc(sizeof(GUID));
+    if (lpTemp == NULL)
+      return(TRUE);
+    memcpy(lpTemp, lpGUID, sizeof(GUID));
+  }
 
-	 return(TRUE);
+  // Add the capture device name to the combo box
+  tempLResult = SendMessage((HWND)hCombo, (UINT)CB_ADDSTRING, 0, (LPARAM)lpszDesc);
+  if(tempLResult == LB_ERR)
+    MessageBox(NULL, TEXT("Couldn't add text to the combo box 1"), TEXT("Error"), MB_OK);
+
+  // Add the associated value (the address of the first field of the structure)
+  SendMessage(hCombo, 
+    CB_SETITEMDATA, 
+    tempLResult,
+    (LPARAM) lpTemp);
+
+  return(TRUE);
 }
 
 
 /*-----------------------Translates int values to float----------------*/
 float translateToFloat(int i){
- if(i==-1)
-	 return -0.1f;
- else if(i==0)
-	 return 0;
- else if(i==1)
-	 return 0.1f;
- else if(i==2)
-	 return 0.2f;
- else if(i==3)
-	 return 0.3f;
- else if(i==4)
-	 return 0.4f;
- else if(i==5)
-	 return 0.5f;
- else if(i==6)
-	 return 0.6f;
- else if(i==7)
-	 return 0.7f;
- else if(i==8)
-	 return 0.8f;
- else if(i==9)
-	 return 0.9f;
- else if(i==10)
-	 return 1.0f;
+  if(i==-1)
+    return -0.1f;
+  else if(i==0)
+    return 0;
+  else if(i==1)
+    return 0.1f;
+  else if(i==2)
+    return 0.2f;
+  else if(i==3)
+    return 0.3f;
+  else if(i==4)
+    return 0.4f;
+  else if(i==5)
+    return 0.5f;
+  else if(i==6)
+    return 0.6f;
+  else if(i==7)
+    return 0.7f;
+  else if(i==8)
+    return 0.8f;
+  else if(i==9)
+    return 0.9f;
+  else if(i==10)
+    return 1.0f;
 
- return 11;
+  return 11;
 }

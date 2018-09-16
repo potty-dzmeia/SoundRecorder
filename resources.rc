@@ -98,7 +98,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,69,66,50,14
-    EDITTEXT        IDC_EDITABOUT,21,8,144,27,ES_CENTER | ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
+    EDITTEXT        IDC_EDITABOUT,7,8,172,27,ES_CENTER | ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
     CTEXT           "LZ1ABC 2018 \n version 1.0 ",IDC_STATIC1,54,42,82,18
 END
 
@@ -109,9 +109,9 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "CLOSE",IDCLOSE,66,230,50,14
     LTEXT           "The compression is Ogg Vorbis in Variable Bit Rate mode. More information at: http://www.vorbis.com/ \n\nQuality -1 is intended as an ultra-low setting in which low bitrate is much more important than quality consistency.",IDC_STATIC,7,12,181,51
-    EDITTEXT        IDC_EDIT1,25,212,139,14,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT1,7,212,181,14,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "Quality settings 0 and above are intended to produce consistent results at all times. \n\n If checked, the  option ""But i still need the .wav files""  sets the output to write both compressed and uncompressed files.",IDC_STATIC,7,66,181,52
-    LTEXT           "Please send bug reports at: x_files@mail.bg",IDC_STATIC,23,200,145,8
+    CTEXT           "Please send bug reports at: ch.levkov@gmail.com",IDC_STATIC,7,199,181,8
     LTEXT           "The default output directory for the sound files is within the directory of the program, called: ""\\Audio files here"".",IDC_STATIC,7,121,181,26
     LTEXT           "You can choose another output directory in:\n File->Select output directory ",IDC_STATIC,7,150,181,19
     LTEXT           "The program needs DirectX in order to work. Usually it's build in Windows, if not get it from the Microsoft web site. ",IDC_STATIC,7,171,181,27

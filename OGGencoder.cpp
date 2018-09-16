@@ -29,7 +29,7 @@ bool OGGencoder :: initLibvorbisenc(){
 	 *from the libvorbis API. After encoding, vorbis_info_clear should be called.
 	 */
 	vorbis_info_init(&vi);
-	ret=vorbis_encode_init_vbr(&vi, params.iStereo,params.iSampleRate,params.qualityOfOggCompression); 
+	ret=vorbis_encode_init_vbr(&vi, params.iNumberOfChannels,params.iSampleRate,params.qualityOfOggCompression); 
 	if(ret){
 		MessageBox(params.hwnd, TEXT("Error when trying to call vorbis_encode_init_vbr()"),TEXT("Error!"), MB_OK || MB_ICONEXCLAMATION);
 		return 0;
@@ -120,9 +120,9 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
 	{
 		for(i=0;i<params.iSampleRate/2;i++) 
     {
-			for(int j=0;j<params.iStereo;j++) 
+			for(int j=0;j<params.iNumberOfChannels;j++) 
       {
-				inputBuffer[j][i]=((int)(pReadBuffer[i*params.iStereo + j])-128)/128.0f;
+				inputBuffer[j][i]=((int)(pReadBuffer[i*params.iNumberOfChannels + j])-128)/128.0f;
       }
     }
   } 
@@ -130,9 +130,9 @@ bool OGGencoder :: encodeChunk(signed char *pReadBuffer){
   {
     for(i=0;i<params.iSampleRate/2;i++) 
     {
-      for(int j=0;j<params.iStereo;j++) 
+      for(int j=0;j<params.iNumberOfChannels;j++) 
       {
-        inputBuffer[j][i]=((int)(pReadBuffer[i*2*params.iStereo +2*j +1]<<8) | (pReadBuffer[i*2*params.iStereo+2*j] & 0xff))/32768.0f;
+        inputBuffer[j][i]=((int)(pReadBuffer[i*2*params.iNumberOfChannels +2*j +1]<<8) | (pReadBuffer[i*2*params.iNumberOfChannels+2*j] & 0xff))/32768.0f;
       }
     }
   }

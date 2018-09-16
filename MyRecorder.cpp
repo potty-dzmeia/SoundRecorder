@@ -99,7 +99,7 @@ BOOL MyRecorder :: CreateMyCaptureBuffer(){
 
   wfxC.cbSize=			sizeof(WAVEFORMATEX);		//configuring the waveformat
   wfxC.wFormatTag=		WAVE_FORMAT_PCM;
-  wfxC.nChannels=			params.iStereo;// 1 or 2
+  wfxC.nChannels=			params.iNumberOfChannels;// 1 or 2
   wfxC.nSamplesPerSec=	params.iSampleRate;
   wfxC.wBitsPerSample=	params.iBitsPerSample;
   wfxC.nBlockAlign=		(wfxC.nChannels*wfxC.wBitsPerSample)/8; // 

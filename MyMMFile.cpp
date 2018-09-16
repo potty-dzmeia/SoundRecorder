@@ -11,7 +11,7 @@ MyMMFile :: MyMMFile(pPARAMS pParams,TCHAR* szFileName){
 	
 	wfxC.cbSize=			sizeof(WAVEFORMATEX);
 	wfxC.wFormatTag=		WAVE_FORMAT_PCM;
-	wfxC.nChannels=			params.iStereo;
+	wfxC.nChannels=			params.iNumberOfChannels;
 	wfxC.nSamplesPerSec=	params.iSampleRate;
 	wfxC.wBitsPerSample=	params.iBitsPerSample;
 	wfxC.nBlockAlign=		(wfxC.nChannels*wfxC.wBitsPerSample)/8;
